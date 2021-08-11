@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
+#include <queue>
 #include <vector>
 using namespace std;
 
@@ -44,31 +45,29 @@ const int64_t INF64 = int64_t(2e18) + 5;
 // 2. For any value of x, query the maximum value of a_i * x + b_i. x must be non-decreasing.
 // All values a_i, b_i, and x can be positive or negative.
 struct monotonic_dp_hull {
-    vector<point> points;
-    int front = 0;
-
-    int size() const {
-        return int(points.size()) - front;
-    }
+    deque<point> points;
 
     void clear() {
         points.clear();
-        front = 0;
         prev_x = -INF64;
         prev_y = 1;
     }
 
-    void insert(const point &p) {
-        assert(size() == 0 || p.x >= points.back().x);
+    int size() const {
+        return int(points.size());
+    }
 
-        if (size() > 0 && p.x == points.back().x) {
+    void insert(const point &p) {
+        assert(points.empty() || p.x >= points.back().x);
+
+        if (!points.empty() && p.x == points.back().x) {
             if (p.y <= points.back().y)
                 return;
 
             points.pop_back();
         }
 
-        while (size() >= 2 && !left_turn(p, points.back(), points[points.size() - 2]))
+        while (size() >= 2 && !left_turn(p, points.back(), points[size() - 2]))
             points.pop_back();
 
         points.push_back(p);
@@ -87,10 +86,10 @@ struct monotonic_dp_hull {
         assert(prev_x == -INF64 || x * prev_y >= prev_x * y);
         prev_x = x; prev_y = y;
 
-        while (size() >= 2 && (points[front + 1].x - points[front].x) * x + (points[front + 1].y - points[front].y) * y >= 0)
-            front++;
+        while (size() >= 2 && (points[1].x - points[0].x) * x + (points[1].y - points[0].y) * y >= 0)
+            points.pop_front();
 
-        return points[front].x * x + points[front].y * y;
+        return points[0].x * x + points[0].y * y;
     }
 };
 
