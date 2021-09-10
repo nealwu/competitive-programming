@@ -166,7 +166,7 @@ void prepare_factorials(int64_t maximum) {
         return;
 
     // Prevent increasing maximum by only 1 each time.
-    maximum += maximum / 16;
+    maximum += maximum / 64;
     _factorial.resize(maximum + 1);
     _inv_factorial.resize(maximum + 1);
 
