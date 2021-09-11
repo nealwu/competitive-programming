@@ -59,7 +59,7 @@ namespace FFT {
     vector<complex<float_t>> roots = {{0, 0}, {1, 0}};
     vector<int> bit_reverse;
 
-    int highest_bit(int x) {
+    int highest_bit(unsigned x) {
         return x == 0 ? -1 : 31 - __builtin_clz(x);
     }
 
@@ -165,7 +165,6 @@ namespace FFT {
             values[i] = i % 2 == 0 ? values[i / 2].real() : values[i / 2].imag();
     }
 
-    const int FFT_CUTOFF = 150;
     const float_t SPLIT_CUTOFF = 2e15;
     const int SPLIT_BASE = 1 << 15;
 
@@ -182,9 +181,14 @@ namespace FFT {
         assert(n * max_value * max_value < SPLIT_CUTOFF);
 #endif
 
-        // Brute force when n is small enough.
-        if (n < 1.5 * FFT_CUTOFF) {
-            vector<T_out> result(2 * n - 1);
+        int output_size = 2 * n - 1;
+        int N = round_up_power_two(n);
+
+        double brute_force_cost = 0.4 * n * n;
+        double fft_cost = 2.0 * N * (get_length(N) + 3);
+
+        if (brute_force_cost < fft_cost) {
+            vector<T_out> result(output_size);
 
             for (int i = 0; i < n; i++) {
                 result[2 * i] += T_out(input[i]) * T_out(input[i]);
@@ -196,8 +200,6 @@ namespace FFT {
             return result;
         }
 
-        int N = round_up_power_two(n);
-        assert(N >= 2);
         prepare_roots(2 * N);
         vector<complex<float_t>> values(N, 0);
 
@@ -220,9 +222,9 @@ namespace FFT {
             values[i] = conj(values[i]) * (ONE / N);
 
         fft_iterative(N, values);
-        vector<T_out> result(2 * n - 1);
+        vector<T_out> result(output_size);
 
-        for (int i = 0; i < int(result.size()); i++) {
+        for (int i = 0; i < output_size; i++) {
             float_t value = i % 2 == 0 ? values[i / 2].real() : values[i / 2].imag();
             result[i] = T_out(is_integral<T_out>::value ? round(value) : value);
         }
@@ -252,9 +254,12 @@ namespace FFT {
 #endif
 
         int output_size = circular ? round_up_power_two(max(n, m)) : n + m - 1;
+        int N = round_up_power_two(output_size);
 
-        // Brute force when either n or m is small enough.
-        if (min(n, m) < FFT_CUTOFF) {
+        double brute_force_cost = 0.55 * n * m;
+        double fft_cost = 1.5 * N * (get_length(N) + 3);
+
+        if (brute_force_cost < fft_cost) {
             auto &&mod_output_size = [&](int x) {
                 return x < output_size ? x : x - output_size;
             };
@@ -268,7 +273,6 @@ namespace FFT {
             return result;
         }
 
-        int N = round_up_power_two(output_size);
         vector<complex<float_t>> values(N, 0);
 
         for (int i = 0; i < n; i++)
@@ -329,15 +333,28 @@ namespace FFT {
         for (int i = 0; i < m; i++)
             assert(0 <= right[i] && right[i] <= mod - 1);
 
+        int output_size = circular ? round_up_power_two(max(n, m)) : n + m - 1;
+        int N = round_up_power_two(output_size);
+
+        if (!split) {
 #ifdef NEAL
-        // Sanity check to make sure I'm not forgetting to split.
-        assert(split || float_t(max(n, m)) * mod * mod < SPLIT_CUTOFF);
+            // Sanity check to make sure I'm not forgetting to split.
+            assert(float_t(max(n, m)) * mod * mod < SPLIT_CUTOFF);
 #endif
 
-        int output_size = circular ? round_up_power_two(max(n, m)) : n + m - 1;
+            const vector<uint64_t> &product = multiply<uint64_t>(left, right, circular);
+            vector<T> result(output_size, 0);
 
-        // Brute force when either n or m is small enough. Brute force up to higher values when split = true.
-        if (min(n, m) < (split ? 2 : 1) * FFT_CUTOFF) {
+            for (int i = 0; i < output_size; i++)
+                result[i] = T(product[i] % mod);
+
+            return result;
+        }
+
+        double brute_force_cost = 0.5 * n * m;
+        double fft_cost = 3.5 * N * (get_length(N) + 4);
+
+        if (brute_force_cost < fft_cost) {
             auto &&mod_output_size = [&](int x) {
                 return x < output_size ? x : x - output_size;
             };
@@ -361,17 +378,6 @@ namespace FFT {
             return vector<T>(result.begin(), result.end());
         }
 
-        if (!split) {
-            const vector<uint64_t> &product = multiply<uint64_t>(left, right, circular);
-            vector<T> result(output_size, 0);
-
-            for (int i = 0; i < output_size; i++)
-                result[i] = T(product[i] % mod);
-
-            return result;
-        }
-
-        int N = round_up_power_two(output_size);
         vector<complex<float_t>> left_fft(N, 0), right_fft(N, 0);
 
         for (int i = 0; i < n; i++) {
@@ -382,7 +388,7 @@ namespace FFT {
         fft_iterative(N, left_fft);
 
         if (left == right) {
-            copy(left_fft.begin(), left_fft.end(), right_fft.begin());
+            right_fft = left_fft;
         } else {
             for (int i = 0; i < m; i++) {
                 right_fft[i].real(int(right[i]) % SPLIT_BASE);
@@ -474,7 +480,7 @@ struct bignum {
     static const uint64_t U64_BOUND = numeric_limits<uint64_t>::max() - uint64_t(BASE) * BASE;
     static const uint64_t BASE_OVERFLOW_CUTOFF = numeric_limits<uint64_t>::max() / BASE;
 
-    static int highest_bit(int x) {
+    static int highest_bit(unsigned x) {
         return x == 0 ? -1 : 31 - __builtin_clz(x);
     }
 

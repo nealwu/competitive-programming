@@ -99,7 +99,7 @@ struct _m_int {
     static _m_int save_inv[SAVE_INV];
 
     static void prepare_inv() {
-        // Make sure MOD is prime, which is necessary for the inverse algorithm below.
+        // Ensures that MOD is prime, which is necessary for the inverse algorithm below.
         for (int64_t p = 2; p * p <= MOD; p += p % 2 + 1)
             assert(MOD % p != 0);
 
@@ -162,7 +162,7 @@ template<const int &MOD>
 struct NTT {
     using ntt_int = _m_int<MOD>;
 
-    static int highest_bit(int x) {
+    static int highest_bit(unsigned x) {
         return x == 0 ? -1 : 31 - __builtin_clz(x);
     }
 
@@ -270,8 +270,6 @@ struct NTT {
         fft_iterative(n, values);
     }
 
-    const int FFT_CUTOFF = 150;
-
     // Note: `circular = true` can be used for a 2x speedup when only the `max(n, m) - min(n, m) + 1` fully overlapping
     // ranges are needed. It computes results using indices modulo the power-of-two FFT size; see the brute force below.
     template<typename T>
@@ -286,9 +284,12 @@ struct NTT {
         int m = int(right.size());
 
         int output_size = circular ? round_up_power_two(max(n, m)) : n + m - 1;
+        int N = round_up_power_two(output_size);
 
-        // Brute force when either n or m is small enough.
-        if (min(n, m) < FFT_CUTOFF) {
+        double brute_force_cost = 1.25 * n * m;
+        double ntt_cost = 3.0 * N * (get_length(N) + 3);
+
+        if (brute_force_cost < ntt_cost) {
             auto &&mod_output_size = [&](int x) {
                 return x < output_size ? x : x - output_size;
             };
@@ -312,7 +313,6 @@ struct NTT {
             return vector<T>(result.begin(), result.end());
         }
 
-        int N = round_up_power_two(output_size);
         left.resize(N, 0);
         right.resize(N, 0);
 
