@@ -18,7 +18,7 @@ template<class Fun> decltype(auto) y_combinator(Fun &&fun) { return y_combinator
 
 // TODO: segment_change can be eliminated entirely in favor of just updating with a new segment instead.
 struct segment_change {
-    // Use a sentinel value rather than a boolean to save significant memory (four bytes per object).
+    // Use a sentinel value rather than a boolean to save significant memory (4-8 bytes per object).
     static const int SENTINEL = numeric_limits<int>::lowest();
 
     // Note that to_set goes first, and to_add goes after.

@@ -5,7 +5,7 @@
 using namespace std;
 
 struct segment_change {
-    // Use a sentinel value rather than a boolean to save significant memory (four bytes per object).
+    // Use a sentinel value rather than a boolean to save significant memory (4-8 bytes per object).
     static const int SENTINEL = numeric_limits<int>::lowest();
 
     // Note that to_set goes first, and to_add goes after.
@@ -19,16 +19,11 @@ struct segment_change {
         return to_set != SENTINEL;
     }
 
-    void reset() {
-        to_add = 0;
-        to_set = SENTINEL;
-    }
-
     bool has_change() const {
         return has_set() || to_add != 0;
     }
 
-    // Return the combined result of applying this segment change followed by `other`.
+    // Return the combined result of applying this segment_change followed by `other`.
     // TODO: make sure to check for sentinel values.
     segment_change combine(const segment_change &other) const {
         if (other.has_set())
@@ -84,7 +79,7 @@ struct segment {
 pair<int, int> right_half[32];
 
 struct seg_tree {
-    static int highest_bit(int x) {
+    static int highest_bit(unsigned x) {
         return x == 0 ? -1 : 31 - __builtin_clz(x);
     }
 
@@ -131,7 +126,7 @@ struct seg_tree {
         if (changes[position].has_change()) {
             apply_and_combine(2 * position, length / 2, changes[position]);
             apply_and_combine(2 * position + 1, length / 2, changes[position]);
-            changes[position].reset();
+            changes[position] = segment_change();
         }
     }
 
