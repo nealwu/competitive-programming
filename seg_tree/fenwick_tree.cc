@@ -12,7 +12,7 @@ struct fenwick_tree {
     }
 
     int tree_n = 0;
-    T tree_sum = 0;
+    T tree_sum = T();
     vector<T> tree;
 
     fenwick_tree(int n = -1) {
@@ -22,15 +22,15 @@ struct fenwick_tree {
 
     void init(int n) {
         tree_n = n;
-        tree_sum = 0;
-        tree.assign(tree_n + 1, 0);
+        tree_sum = T();
+        tree.assign(tree_n + 1, T());
     }
 
     // O(n) initialization of the Fenwick tree.
     template<typename T_array>
     void build(const T_array &initial) {
         assert(int(initial.size()) == tree_n);
-        tree_sum = 0;
+        tree_sum = T();
 
         for (int i = 1; i <= tree_n; i++) {
             tree[i] = initial[i - 1];
@@ -53,7 +53,7 @@ struct fenwick_tree {
     // Returns the sum of the range [0, count).
     T query(int count) const {
         count = min(count, tree_n);
-        T sum = 0;
+        T sum = T();
 
         for (int i = count; i > 0; i -= i & -i)
             sum += tree[i];
@@ -105,7 +105,7 @@ struct fenwick_tree {
     // `query(index)` provides the count of elements < index.
     // `find_last_prefix(k)` finds the k-th smallest element (0-indexed). Returns `tree_n` for `sum >= set.size()`.
     int find_last_prefix(T sum) const {
-        if (sum < 0)
+        if (sum < T())
             return -1;
 
         int prefix = 0;

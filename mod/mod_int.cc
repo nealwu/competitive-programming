@@ -92,7 +92,7 @@ struct _m_int {
     static _m_int save_inv[SAVE_INV];
 
     static void prepare_inv() {
-        // Make sure MOD is prime, which is necessary for the inverse algorithm below.
+        // Ensures that MOD is prime, which is necessary for the inverse algorithm below.
         for (int64_t p = 2; p * p <= MOD; p += p % 2 + 1)
             assert(MOD % p != 0);
 

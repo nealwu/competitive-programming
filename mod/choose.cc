@@ -98,7 +98,7 @@ struct _m_int {
     static _m_int save_inv[SAVE_INV];
 
     static void prepare_inv() {
-        // Make sure MOD is prime, which is necessary for the inverse algorithm below.
+        // Ensures that MOD is prime, which is necessary for the inverse algorithm below.
         for (int64_t p = 2; p * p <= MOD; p += p % 2 + 1)
             assert(MOD % p != 0);
 
@@ -229,22 +229,22 @@ int main() {
     if (want_hash) {
         string S;
         cin >> S;
+        assert(int(S.size()) == N + 1);
+
         const int MULT = 123;
         uint64_t hash = 0;
 
         for (int n = 0; n <= N; n++)
             if (S[n] == '0') {
-                for (int r = 0; r <= n; r++)
+                for (int r = 0; r <= n; r++) {
                     hash = MULT * hash + int(choose(n, r));
-
-                for (int r = n; r >= 0; r--)
                     hash = MULT * hash + int(permute(n, r));
+                }
             } else {
-                for (int r = n; r >= 0; r--)
+                for (int r = n; r >= 0; r--) {
                     hash = MULT * hash + int(choose(n, r));
-
-                for (int r = 0; r <= n; r++)
                     hash = MULT * hash + int(permute(n, r));
+                }
             }
 
         cout << hash << '\n';

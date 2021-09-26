@@ -10,10 +10,10 @@ struct segment_change {
 
     // Note that to_set goes first, and to_add goes after.
     // TODO: check if these values can overflow int.
-    int to_add, to_set;
+    int to_set, to_add;
 
     // TODO: make sure the default constructor is the identity segment_change.
-    segment_change(int _to_add = 0, int _to_set = SENTINEL) : to_add(_to_add), to_set(_to_set) {}
+    segment_change(int _to_add = 0, int _to_set = SENTINEL) : to_set(_to_set), to_add(_to_add) {}
 
     bool has_set() const {
         return to_set != SENTINEL;
@@ -51,10 +51,8 @@ struct segment {
             sum = int64_t(length) * change.to_set;
         }
 
-        if (change.to_add != 0) {
-            maximum += change.to_add;
-            sum += int64_t(length) * change.to_add;
-        }
+        maximum += change.to_add;
+        sum += int64_t(length) * change.to_add;
     }
 
     void join(const segment &other) {

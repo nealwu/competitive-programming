@@ -7,7 +7,7 @@ using namespace std;
 
 template<typename T, bool maximum_mode = false>
 struct RMQ {
-    static int highest_bit(int x) {
+    static int highest_bit(unsigned x) {
         return x == 0 ? -1 : 31 - __builtin_clz(x);
     }
 
