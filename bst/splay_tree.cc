@@ -449,10 +449,10 @@ struct splay_tree {
 
     // Returns a splay_node pointer representing the last `count` nodes. If none, returns `nullptr`.
     splay_node *query_suffix_count(int count) {
-        if (count >= size())
-            return root;
-        else if (count <= 0)
+        if (count <= 0)
             return nullptr;
+        else if (count >= size())
+            return root;
 
         int index = size() - count;
         splay_node *node = node_at_index(index - 1);
@@ -460,7 +460,7 @@ struct splay_tree {
         return node->child[1];
     }
 
-    // Returns a splay_node pointer representing the range [start, end). If none, returns `nullptr`.
+    // Returns a splay_node pointer representing the index range [start, end). If none, returns `nullptr`.
     splay_node *query_range(int start, int end) {
         if (start >= end)
             return nullptr;

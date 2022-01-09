@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <array>
 #include <cassert>
 #include <iostream>
 #include <queue>
@@ -173,8 +172,99 @@ struct dinic {
     }
 };
 
+// projects_and_tools solves the following problem:
+// There are P projects you can complete. The i-th project gives a reward of projects_i money.
+// There are also T tools to help complete the projects; for each project, you know which of the tools it requires.
+// The i-th tool costs tools_i money, but once purchased it can be used for as many projects as needed.
+// What is the maximum amount of money you can end up with by choosing the optimal subset of projects?
+template<typename cost_t>
+struct projects_and_tools {
+    int P, T;
+    int V, source, sink;
+    dinic<cost_t> graph;
+    cost_t project_total;
 
-// Accepted on https://www.spoj.com/problems/FASTFLOW/
+    projects_and_tools() {}
+
+    projects_and_tools(int _P, int _T) {
+        init(_P, _T);
+    }
+
+    template<typename T_array>
+    projects_and_tools(const T_array &projects, const T_array &tools) {
+        init(projects, tools);
+    }
+
+    void init(int _P, int _T) {
+        P = _P;
+        T = _T;
+        V = P + T + 2;
+        source = V - 2;
+        sink = V - 1;
+        graph.init(V);
+    }
+
+    template<typename T_array>
+    void init(const T_array &projects, const T_array &tools) {
+        init(projects.size(), tools.size());
+        set_projects(projects);
+        set_tools(tools);
+    }
+
+    template<typename T_array>
+    void set_projects(const T_array &projects) {
+        project_total = 0;
+
+        for (int i = 0; i < P; i++) {
+            graph.add_directional_edge(source, i, projects[i]);
+            project_total += projects[i];
+        }
+    }
+
+    template<typename T_array>
+    void set_tools(const T_array &tools) {
+        for (int i = 0; i < T; i++)
+            graph.add_directional_edge(P + i, sink, tools[i]);
+    }
+
+    void add_dependency(int project, int tool) {
+        assert(0 <= project && project < P);
+        assert(0 <= tool && tool < T);
+        graph.add_directional_edge(project, P + tool, numeric_limits<cost_t>::max());
+    }
+
+    // This indicates that project p1 also depends on all the tools project p2 depends on.
+    void add_project_dependency(int p1, int p2) {
+        assert(0 <= p1 && p1 < P && 0 <= p2 && p2 < P);
+        graph.add_directional_edge(p1, p2, numeric_limits<cost_t>::max());
+    }
+
+    cost_t solve() {
+        return project_total - graph.flow(source, sink);
+    }
+
+    vector<int> chosen_projects() {
+        auto cut = graph.min_cut(source);
+        vector<bool> chosen(P, true);
+
+        for (auto &cut_edge : cut)
+            if (cut_edge.second.first == source)
+                chosen[cut_edge.second.second] = false;
+
+        vector<int> result;
+
+        for (int i = 0; i < P; i++)
+            if (chosen[i])
+                result.push_back(i);
+
+        return result;
+    }
+};
+
+
+// Solution to https://codeforces.com/contest/1082/problem/G
+
+template<typename T> ostream& operator<<(ostream &os, const vector<T> &v) { os << "{"; string sep; for (const auto &x : v) os << sep << x, sep = ", "; return os << "}"; }
 
 int main() {
     ios::sync_with_stdio(false);
@@ -183,38 +273,25 @@ int main() {
 #endif
 
     int N, M;
-    string str;
-    cin >> str;
-    bool directed_mode = false;
+    cin >> N >> M;
+    projects_and_tools<int64_t> solver(M, N);
+    vector<int> vertices(N);
 
-    if (str == "directed") {
-        directed_mode = true;
-        cin >> N >> M;
-    } else {
-        N = stoi(str);
-        cin >> M;
-    }
+    for (int &v : vertices)
+        cin >> v;
 
-    dinic<int64_t> graph(N);
+    solver.set_tools(vertices);
+    vector<int> edges(M);
 
     for (int i = 0; i < M; i++) {
-        int a, b, c;
-        cin >> a >> b >> c;
-        a--; b--;
-
-        if (directed_mode)
-            graph.add_directional_edge(a, b, c);
-        else
-            graph.add_bidirectional_edge(a, b, c);
+        int u, v;
+        cin >> u >> v >> edges[i];
+        u--; v--;
+        solver.add_dependency(i, u);
+        solver.add_dependency(i, v);
     }
 
-    int64_t answer = graph.flow(0, N - 1);
-    cout << answer << '\n';
-    auto cut = graph.min_cut(0);
-    int64_t cut_sum = 0;
-
-    for (auto &t : cut)
-        cut_sum += t.first;
-
-    assert(answer == cut_sum);
+    solver.set_projects(edges);
+    cout << solver.solve() << '\n';
+    cerr << solver.chosen_projects() << endl;
 }

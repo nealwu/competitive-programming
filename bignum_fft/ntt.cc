@@ -120,10 +120,10 @@ struct _m_int {
         _m_int product = 1;
         int v = val;
 
-        while (v >= SAVE_INV) {
+        do {
             product *= MOD - MOD / v;
             v = MOD % v;
-        }
+        } while (v >= SAVE_INV);
 
         return product * save_inv[v];
     }
@@ -349,7 +349,7 @@ struct NTT {
         return result;
     }
 
-    // Multiplies many polynomials whose total degree is n in O(n log^2 n).
+    // Multiplies many polynomials whose total degree is n in O(n log n log(polynomials.size())).
     template<typename T>
     vector<T> mod_multiply_all(const vector<vector<T>> &polynomials) {
         if (polynomials.empty())

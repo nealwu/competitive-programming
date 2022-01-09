@@ -214,6 +214,7 @@ int main() {
             cut_vertices.push_back(i);
 
     int CV = int(cut_vertices.size());
+    cout << CV << '\n';
 
     for (int i = 0; i < CV; i++)
         cout << cut_vertices[i] + 1 << (i < CV - 1 ? ' ' : '\n');

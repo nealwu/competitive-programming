@@ -47,15 +47,18 @@ struct segment {
         return max_diff < 0;
     }
 
-    void apply(const segment_change &change) {
+    void apply(int length, const segment_change &change) {
+        assert(length == 1);
+
         if (change.has_set()) {
-            maximum = first = last = change.to_set;
-            sum = change.to_set;
+            maximum = change.to_set;
+            sum = int64_t(length) * change.to_set;
+            first = last = change.to_set;
             max_diff = 0;
         }
 
         maximum += change.to_add;
-        sum += change.to_add;
+        sum += int64_t(length) * change.to_add;
         first += change.to_add;
         last += change.to_add;
     }
@@ -81,101 +84,167 @@ struct segment {
     }
 };
 
-int right_half[32];
-
-struct basic_seg_tree {
-    // TODO: POWER_OF_TWO_MODE is necessary in order to call query_full() or to binary search the tree.
-    static const bool POWER_OF_TWO_MODE = true;
+// TODO: persistent trees have both bad constant factor and high memory usage. Make sure we won't TLE or MLE.
+struct persistent_basic_seg_tree {
+    struct node {
+        segment seg;
+        int left = -1, right = -1;
+    };
 
     int tree_n = 0;
-    vector<segment> tree;
+    vector<node> tree;
+    int reserve_size = INT32_MAX;
 
-    basic_seg_tree(int n = -1) {
+    persistent_basic_seg_tree(int n = -1, int max_updates = 0) {
         if (n >= 0)
-            init(n);
+            init(n, max_updates);
     }
 
-    void init(int n) {
-        if (POWER_OF_TWO_MODE) {
-            tree_n = 1;
+    void init(int n, int max_updates = 0) {
+        tree_n = 1;
 
-            while (tree_n < n)
-                tree_n *= 2;
-        } else {
-            tree_n = n;
+        while (tree_n < n)
+            tree_n *= 2;
+
+        reserve_size = INT32_MAX;
+
+        if (max_updates > 0) {
+            int tree_height = 32 - __builtin_clz(tree_n);
+            reserve_size = 2 * tree_n + max_updates * tree_height;
+            tree.reserve(reserve_size);
         }
 
-        tree.assign(2 * tree_n, segment());
+        tree.assign(2 * tree_n, node());
+
+        for (int i = 1; i < tree_n; i++) {
+            tree[i].left = 2 * i;
+            tree[i].right = 2 * i + 1;
+        }
     }
+
+    int left(int position) const { return tree[position].left; }
+    int right(int position) const { return tree[position].right; }
+    segment& seg(int position) { return tree[position].seg; }
+    const segment& seg(int position) const { return tree[position].seg; }
 
     // Builds our tree from an array in O(n).
     void build(const vector<segment> &initial) {
         int n = int(initial.size());
-        init(n);
         assert(n <= tree_n);
 
         for (int i = 0; i < n; i++)
-            tree[tree_n + i] = initial[i];
+            seg(tree_n + i) = initial[i];
 
         for (int position = tree_n - 1; position > 0; position--)
-            tree[position].join(tree[2 * position], tree[2 * position + 1]);
+            seg(position).join(seg(left(position)), seg(right(position)));
     }
 
-    segment query(int a, int b) const {
-        assert(0 <= a && a <= b && b <= tree_n);
-        segment answer;
-        int r_size = 0;
+    int make_copy(int position) {
+        assert(0 <= position && position < int(tree.size()));
+        tree.push_back(tree[position]);
+        assert(int(tree.size()) <= reserve_size);
+        return int(tree.size()) - 1;
+    }
 
-        for (a += tree_n, b += tree_n; a < b; a /= 2, b /= 2) {
-            if (a & 1)
-                answer.join(tree[a++]);
-
-            if (b & 1)
-                right_half[r_size++] = --b;
+    void _query_tree(int position, int start, int end, int a, int b, segment &answer) const {
+        if (a <= start && end <= b) {
+            answer.join(seg(position));
+            return;
         }
 
-        for (int i = r_size - 1; i >= 0; i--)
-            answer.join(tree[right_half[i]]);
+        if (left(position) < 0 || right(position) < 0)
+            return;
 
+        int mid = (start + end) / 2;
+        if (a < mid) _query_tree(left(position), start, mid, a, b, answer);
+        if (b > mid) _query_tree(right(position), mid, end, a, b, answer);
+    }
+
+    segment query(int root, int a, int b) const {
+        assert(root > 0 && 0 <= a && a <= b && b <= tree_n);
+        segment answer;
+        _query_tree(root, 0, tree_n, a, b, answer);
         return answer;
     }
 
-    segment query_full() const {
-        assert(POWER_OF_TWO_MODE);
-        return tree[1];
-    }
+    // Directly assigning `tree[position].left = make_copy(left(position))` results in segmentation faults, because the
+    // address for `tree[position]` can be computed before calling `make_copy`, which may reallocate `tree`.
+    void set_left(int position, int result) { tree[position].left = result; }
+    void set_right(int position, int result) { tree[position].right = result; }
 
-    segment query_single(int index) const {
-        assert(0 <= index && index < tree_n);
-        return tree[tree_n + index];
-    }
+    template<typename T_range_op>
+    int _update_tree(int position, int start, int end, int index, T_range_op &&range_op) {
+        position = make_copy(position);
 
-    void join_up(int position) {
-        while (position > 1) {
-            position /= 2;
-            tree[position].join(tree[2 * position], tree[2 * position + 1]);
+        if (end - start == 1 && start == index) {
+            range_op(position, end - start);
+            return position;
         }
+
+        if (left(position) < 0 || right(position) < 0)
+            return position;
+
+        int mid = (start + end) / 2;
+
+        if (index < mid)
+            set_left(position, _update_tree(left(position), start, mid, index, range_op));
+        else
+            set_right(position, _update_tree(right(position), mid, end, index, range_op));
+
+        seg(position).join(seg(left(position)), seg(right(position)));
+        return position;
     }
 
-    void update(int index, const segment_change &change) {
-        assert(0 <= index && index < tree_n);
-        int position = tree_n + index;
-        tree[position].apply(change);
-        join_up(position);
+    int update(int root, int index, const segment_change &change) {
+        assert(root > 0 && 0 <= index && index < tree_n);
+
+        return _update_tree(root, 0, tree_n, index, [&](int position, int length) {
+            seg(position).apply(length, change);
+        });
     }
 
-    void update(int index, const segment &seg) {
-        assert(0 <= index && index < tree_n);
-        int position = tree_n + index;
-        tree[position] = seg;
-        join_up(position);
+    int update(int root, int index, const segment &new_seg) {
+        assert(root > 0 && 0 <= index && index < tree_n);
+
+        return _update_tree(root, 0, tree_n, index, [&](int position, int) {
+            seg(position) = new_seg;
+        });
+    }
+
+    // Removes all updates starting from `root` or later from the tree.
+    void undo_updates(int root) {
+        assert(root >= 2 * tree_n && root <= int(tree.size()));
+        tree.resize(root);
+    }
+
+    vector<segment> to_array(int root) const {
+        assert(root > 0);
+        vector<int> level = {root};
+
+        while (left(level.front()) >= 0) {
+            vector<int> new_level;
+            new_level.reserve(2 * level.size());
+
+            for (int x : level) {
+                new_level.push_back(left(x));
+                new_level.push_back(right(x));
+            }
+
+            swap(level, new_level);
+        }
+
+        vector<segment> segs(level.size());
+
+        for (int i = 0; i < int(level.size()); i++)
+            segs[i] = seg(level[i]);
+
+        return segs;
     }
 
     // Finds the end of the last subarray starting at `first` satisfying `should_join` via binary search in O(log n).
     template<typename T_bool>
-    int find_last_subarray(T_bool &&should_join, int n, int first = 0) const {
-        assert(POWER_OF_TWO_MODE);
-        assert(0 <= first && first <= n);
+    int find_last_subarray(int root, T_bool &&should_join, int n, int first = 0) const {
+        assert(root > 0 && 0 <= first && first <= n);
         segment current;
 
         // Check the degenerate case.
@@ -185,17 +254,17 @@ struct basic_seg_tree {
         return y_combinator([&](auto search, int position, int start, int end) -> int {
             if (end <= first) {
                 return end;
-            } else if (first <= start && end <= n && should_join(current, tree[position])) {
-                current.join(tree[position]);
+            } else if (first <= start && end <= n && should_join(current, seg(position))) {
+                current.join(seg(position));
                 return end;
             } else if (end - start == 1) {
                 return start;
             }
 
             int mid = (start + end) / 2;
-            int left = search(2 * position, start, mid);
-            return left < mid ? left : search(2 * position + 1, mid, end);
-        })(1, 0, tree_n);
+            int x = search(left(position), start, mid);
+            return x < mid ? x : search(right(position), mid, end);
+        })(root, 0, tree_n);
     }
 };
 
@@ -208,8 +277,9 @@ int main() {
 
     int N, Q;
     cin >> N >> Q;
-    basic_seg_tree tree(N);
+    persistent_basic_seg_tree tree(N, Q);
     tree.build(vector<segment>(N, segment(0, 0, 0, 0, 0)));
+    int root = 1;
 
     for (int q = 0; q < Q; q++) {
         // This can handle the following operations (described below with inclusive 1-based indexing):
@@ -232,7 +302,7 @@ int main() {
             cin >> a >> x;
             a--;
 
-            int index = tree.find_last_subarray([&](const segment &, const segment &add) {
+            int index = tree.find_last_subarray(root, [&](const segment &, const segment &add) {
                 return add.maximum < x;
             }, N, a);
 
@@ -243,7 +313,7 @@ int main() {
             cin >> a >> x;
             a--;
 
-            int index = tree.find_last_subarray([&](const segment &current, const segment &add) {
+            int index = tree.find_last_subarray(root, [&](const segment &current, const segment &add) {
                 return current.sum + add.sum < x;
             }, N, a);
 
@@ -261,12 +331,12 @@ int main() {
 
         if (type == "add") {
             assert(b - a == 1);
-            tree.update(a, segment_change(int(x)));
+            root = tree.update(root, a, segment_change(int(x)));
         } else if (type == "set") {
             assert(b - a == 1);
-            tree.update(a, segment_change(0, int(x)));
+            root = tree.update(root, a, segment_change(0, int(x)));
         } else {
-            segment seg = a == 0 && b == N ? tree.query_full() : tree.query(a, b);
+            segment seg = tree.query(root, a, b);
 
             if (type == "max")
                 cout << seg.maximum << '\n';
@@ -279,6 +349,8 @@ int main() {
         }
     }
 
+    vector<segment> segs = tree.to_array(root);
+
     for (int i = 0; i < N; i++)
-        cout << tree.tree[tree.tree_n + i].sum << (i < N - 1 ? ' ' : '\n');
+        cout << segs[i].sum << (i < N - 1 ? ' ' : '\n');
 }

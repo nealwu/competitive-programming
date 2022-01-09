@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <cstring>
 #include <iostream>
 #include <vector>
 using namespace std;
@@ -12,13 +13,18 @@ struct array_trie {
         int words = 0;
 
         trie_node() {
-            child.fill(-1);
+            memset(&child[0], -1, ALPHABET * sizeof(int));
         }
     };
 
     static const int ROOT = 0;
 
     vector<trie_node> nodes = {trie_node()};
+
+    array_trie(int total_length = -1) {
+        if (total_length >= 0)
+            nodes.reserve(total_length + 1);
+    }
 
     int get_or_create_child(int node, int c) {
         if (nodes[node].child[c] < 0) {
@@ -29,28 +35,29 @@ struct array_trie {
         return nodes[node].child[c];
     }
 
-    int add_word(const string &word) {
+    int add(const string &word) {
         int node = ROOT;
 
-        for (char c : word)
-            node = get_or_create_child(node, c - MIN_CHAR);
+        for (char ch : word)
+            node = get_or_create_child(node, ch - MIN_CHAR);
 
         nodes[node].words++;
         return node;
     }
 
-    int count_prefixes(const string &word, bool include_word) {
+    // Given a string, how many words in the trie are prefixes of the string?
+    int count_prefixes(const string &str, bool include_full) {
         int node = ROOT, count = 0;
 
-        for (char c : word) {
+        for (char ch : str) {
             count += nodes[node].words;
-            node = nodes[node].child[c - MIN_CHAR];
+            node = nodes[node].child[ch - MIN_CHAR];
 
             if (node < 0)
                 break;
         }
 
-        if (include_word && node >= 0)
+        if (include_full && node >= 0)
             count += nodes[node].words;
 
         return count;
@@ -72,6 +79,6 @@ int main() {
         string str;
         cin >> str;
         cout << trie.count_prefixes(str, true) << (i < N - 1 ? ' ' : '\n');
-        trie.add_word(str);
+        trie.add(str);
     }
 }

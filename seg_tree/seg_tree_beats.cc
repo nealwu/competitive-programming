@@ -16,23 +16,27 @@ public:
 template<class Fun> decltype(auto) y_combinator(Fun &&fun) { return y_combinator_result<std::decay_t<Fun>>(std::forward<Fun>(fun)); }
 
 
+// Note: value_t must be able to handle sums of elements / sums of updates, not just individual elements.
+using value_t = int64_t;
+
 struct segment_change {
     // Use a sentinel value rather than a boolean to save significant memory (4-8 bytes per object).
-    static const int SENTINEL = numeric_limits<int>::lowest();
+    // SENTINEL is also conveniently the minimum possible value, which is a no-op for to_max.
+    static const value_t SENTINEL = numeric_limits<value_t>::lowest();
 
-    // Note that to_set goes first, and to_add goes after.
+    // Note that to_set goes first, then to_max, and then to_add.
     // TODO: check if these values can overflow int.
-    int to_set, to_add;
+    value_t to_set, to_max, to_add;
 
     // TODO: make sure the default constructor is the identity segment_change.
-    segment_change(int _to_add = 0, int _to_set = SENTINEL) : to_set(_to_set), to_add(_to_add) {}
+    segment_change(value_t _to_add = 0, value_t _to_set = SENTINEL, value_t _to_max = SENTINEL)
+        : to_set(_to_set), to_max(_to_max), to_add(_to_add) {}
 
-    bool has_set() const {
-        return to_set != SENTINEL;
-    }
+    bool has_set() const { return to_set != SENTINEL; }
+    bool has_max() const { return to_max != SENTINEL; }
 
     bool has_change() const {
-        return has_set() || to_add != 0;
+        return has_set() || has_max() || to_add != 0;
     }
 
     // Return the combined result of applying this segment_change followed by `other`.
@@ -41,36 +45,69 @@ struct segment_change {
         if (other.has_set())
             return other;
 
-        return segment_change(to_add + other.to_add, to_set);
+        segment_change combined = *this;
+
+        // to_set, to_max, to_add, other.to_max, other.to_add ->
+        // to_set, max(to_max, other.to_max - to_add), to_add + other.to_add
+        if (other.has_max())
+            combined.to_max = max(to_max, other.to_max - to_add);
+
+        combined.to_add += other.to_add;
+        return combined;
     }
 };
 
 struct segment {
     // TODO: check if these values can overflow int.
-    int maximum;
-    int64_t sum;
-    int first, last, max_diff;
+    value_t minimum, second_min;
+    int min_count, second_count;
+
+    value_t maximum, sum;
 
     // TODO: make sure the default constructor is the identity segment.
-    segment(int _maximum = numeric_limits<int>::lowest(), int64_t _sum = 0, int _first = 0, int _last = 0,
-            int _max_diff = -1) : maximum(_maximum), sum(_sum), first(_first), last(_last), max_diff(_max_diff) {}
+    segment(value_t value = 0, int count = 0) {
+        minimum = count != 0 ? value : numeric_limits<value_t>::max();
+        min_count = count;
+        second_min = numeric_limits<value_t>::max();
+        second_count = 0;
 
-    bool empty() const {
-        return max_diff < 0;
+        maximum = count != 0 ? value : numeric_limits<value_t>::lowest();
+        sum = value_t(value) * count;
     }
 
-    void apply(int length, const segment_change &change) {
+    bool empty() const {
+        return min_count == 0;
+    }
+
+    // apply returns true if we can stop here. If false, we need to continue updating down.
+    bool apply(int length, const segment_change &change) {
         if (change.has_set()) {
+            minimum = change.to_set;
+            min_count = length;
+            second_min = numeric_limits<value_t>::max();
+            second_count = 0;
+
             maximum = change.to_set;
-            sum = int64_t(length) * change.to_set;
-            first = last = change.to_set;
-            max_diff = 0;
+            sum = value_t(change.to_set) * length;
         }
 
-        maximum += change.to_add;
-        sum += int64_t(length) * change.to_add;
-        first += change.to_add;
-        last += change.to_add;
+        if (change.has_max() && change.to_max > minimum) {
+            if (second_count != 0 && change.to_max >= second_min)
+                return false;
+
+            sum += value_t(change.to_max - minimum) * min_count;
+            minimum = change.to_max;
+            maximum = max(maximum, change.to_max);
+        }
+
+        if (change.to_add != 0) {
+            minimum += change.to_add;
+            if (second_count != 0) second_min += change.to_add;
+            maximum += change.to_add;
+            sum += value_t(change.to_add) * length;
+        }
+
+        return true;
     }
 
     void join(const segment &other) {
@@ -81,10 +118,30 @@ struct segment {
             return;
         }
 
+        auto update_second_min = [&](value_t cand_min, int cand_count) {
+            if (cand_min < second_min) {
+                second_min = cand_min;
+                second_count = cand_count;
+            } else if (cand_min == second_min) {
+                second_count += cand_count;
+            }
+        };
+
+        if (minimum == other.minimum) {
+            min_count += other.min_count;
+            update_second_min(other.second_min, other.second_count);
+        } else if (minimum < other.minimum) {
+            update_second_min(other.minimum, other.min_count);
+        } else {
+            second_min = minimum;
+            second_count = min_count;
+            update_second_min(other.second_min, other.second_count);
+            minimum = other.minimum;
+            min_count = other.min_count;
+        }
+
         maximum = max(maximum, other.maximum);
         sum += other.sum;
-        max_diff = max({max_diff, other.max_diff, abs(last - other.first)});
-        last = other.last;
     }
 
     // TODO: decide whether to re-implement this for better performance. Mainly relevant when segments contain arrays.
@@ -94,7 +151,7 @@ struct segment {
     }
 };
 
-struct seg_tree {
+struct seg_tree_beats {
     static int highest_bit(unsigned x) {
         return x == 0 ? -1 : 31 - __builtin_clz(x);
     }
@@ -103,7 +160,7 @@ struct seg_tree {
     vector<segment> tree;
     vector<segment_change> changes;
 
-    seg_tree(int n = -1) {
+    seg_tree_beats(int n = -1) {
         if (n >= 0)
             init(n);
     }
@@ -131,27 +188,32 @@ struct seg_tree {
             tree[position].join(tree[2 * position], tree[2 * position + 1]);
     }
 
-    void apply_and_combine(int position, int length, const segment_change &change) {
-        tree[position].apply(length, change);
+    bool apply_and_combine(int position, int length, const segment_change &change) {
+        if (tree[position].apply(length, change)) {
+            if (position < tree_n)
+                changes[position] = changes[position].combine(change);
 
-        if (position < tree_n)
-            changes[position] = changes[position].combine(change);
+            return true;
+        }
+
+        return false;
     }
 
     void push_down(int position, int length) {
         if (changes[position].has_change()) {
-            apply_and_combine(2 * position, length / 2, changes[position]);
-            apply_and_combine(2 * position + 1, length / 2, changes[position]);
+            bool success = true;
+            success &= apply_and_combine(2 * position, length / 2, changes[position]);
+            success &= apply_and_combine(2 * position + 1, length / 2, changes[position]);
+            assert(success);
             changes[position] = segment_change();
         }
     }
 
     template<typename T_range_op>
     void process_range(int position, int start, int end, int a, int b, bool needs_join, T_range_op &&range_op) {
-        if (a <= start && end <= b) {
-            range_op(position, end - start);
+        // range_op returns true if we can finish here; if false, we need to continue recursing down.
+        if (a <= start && end <= b && range_op(position, end - start))
             return;
-        }
 
         if (position >= tree_n)
             return;
@@ -169,6 +231,7 @@ struct seg_tree {
 
         process_range(1, 0, tree_n, a, b, false, [&](int position, int) {
             answer.join(tree[position]);
+            return true;
         });
 
         return answer;
@@ -182,7 +245,7 @@ struct seg_tree {
         assert(0 <= a && a <= b && b <= tree_n);
 
         process_range(1, 0, tree_n, a, b, true, [&](int position, int length) {
-            apply_and_combine(position, length, change);
+            return apply_and_combine(position, length, change);
         });
     }
 
@@ -196,21 +259,6 @@ struct seg_tree {
             segs[i] = tree[tree_n + i];
 
         return segs;
-    }
-
-    void update_single(int index, const segment &seg) {
-        assert(0 <= index && index < tree_n);
-        int position = tree_n + index;
-
-        for (int up = highest_bit(tree_n); up > 0; up--)
-            push_down(position >> up, 1 << up);
-
-        tree[position] = seg;
-
-        while (position > 1) {
-            position /= 2;
-            tree[position].join(tree[2 * position], tree[2 * position + 1]);
-        }
     }
 
     // Finds the end of the last subarray starting at `first` satisfying `should_join` via binary search in O(log n).
@@ -250,24 +298,26 @@ int main() {
 
     int N, Q;
     cin >> N >> Q;
-    seg_tree tree(N);
-    tree.build(vector<segment>(N, segment(0, 0, 0, 0, 0)));
+    seg_tree_beats tree(N);
+    tree.build(vector<segment>(N, segment(0, 1)));
 
     for (int q = 0; q < Q; q++) {
         // This can handle the following operations (described below with inclusive 1-based indexing):
-        // 1) "add a b x": add x to numbers[a] through numbers[b].
+        // 1) "set_max a b x": all of numbers[a] through numbers[b] do num = max(num, x).
         // 2) "set a b x": set all of numbers[a] through numbers[b] to x.
-        // 3) "max a b": compute the maximum of numbers[a] through numbers[b].
-        // 4) "sum a b": compute the sum of numbers[a] through numbers[b].
-        // 5) "diff a b": compute the maximum difference between any two consecutive numbers in numbers[a] through
-        //      numbers[b]. If a = b, print 0.
-        // 6) "fmax a x": given a, find the first index i with a <= i <= N such that numbers[i] >= x. If no such i
+        // 3) "sum a b": compute the sum of numbers[a] through numbers[b].
+        // 4) "min a b": compute the min of numbers[a] through numbers[b].
+        // 5) "max a b": compute the max of numbers[a] through numbers[b].
+        // 6) "add a b x": add x to all of numbers[a] through numbers[b]. Including this operation changes the
+        //    complexity from amortized O(log n) per operation to amortized O(log^2 n) per operation. However it still
+        //    seems fast in practice.
+        // 7) "fmax a x": given a, find the first index i with a <= i <= N such that numbers[i] >= x. If no such i
         //      exists, print -1.
-        // 7) "fsum a x": given a, find the first index i with a - 1 <= i <= N such that numbers[a] + ... + numbers[i]
+        // 8) "fsum a x": given a, find the first index i with a - 1 <= i <= N such that numbers[a] + ... + numbers[i]
         //      is >= x (sum = 0 when i = a - 1). If no such i exists, print -1.
         string type;
         int a, b;
-        int64_t x;
+        value_t x;
         cin >> type;
 
         if (type == "fmax") {
@@ -294,27 +344,25 @@ int main() {
 
         cin >> a >> b;
         a--;
-        assert(0 <= a && a < b && b <= N);
 
-        if (type == "add" || type == "set")
+        if (type == "set_max") {
             cin >> x;
-
-        if (type == "add") {
-            tree.update(a, b, segment_change(int(x)));
+            tree.update(a, b, segment_change(0, segment_change::SENTINEL, x));
         } else if (type == "set") {
-            if (b - a == 1)
-                tree.update_single(a, segment(int(x), x, int(x), int(x), 0));
-            else
-                tree.update(a, b, segment_change(0, int(x)));
+            cin >> x;
+            tree.update(a, b, segment_change(0, x));
+        } else if (type == "add") {
+            cin >> x;
+            tree.update(a, b, segment_change(x));
         } else {
             segment seg = a == 0 && b == N ? tree.query_full() : tree.query(a, b);
 
-            if (type == "max")
-                cout << seg.maximum << '\n';
-            else if (type == "sum")
+            if (type == "sum")
                 cout << seg.sum << '\n';
-            else if (type == "diff")
-                cout << seg.max_diff << '\n';
+            else if (type == "min")
+                cout << seg.minimum << '\n';
+            else if (type == "max")
+                cout << seg.maximum << '\n';
             else
                 assert(false);
         }

@@ -1,3 +1,10 @@
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <iostream>
+#include <map>
+#include <vector>
+using namespace std;
 
 template<const int &MOD>
 struct _m_int {
@@ -148,5 +155,43 @@ struct _m_int {
 template<const int &MOD> _m_int<MOD> _m_int<MOD>::save_inv[_m_int<MOD>::SAVE_INV];
 
 extern const int MOD = 998244353;
-extern const int MOD = int(1e9) + 7;
 using mod_int = _m_int<MOD>;
+
+// Counts the number of distinct nonempty subsequences in an array.
+template<typename T>
+mod_int distinct_subsequences(const vector<T> &A) {
+    int n = int(A.size());
+    vector<mod_int> dp(n + 1, 0);
+    dp[0] = 1;
+    map<T, int> last;
+    // TODO: replace `last` with a hash map or a vector if applicable.
+
+    for (int i = 0; i < n; i++) {
+        dp[i + 1] = 2 * dp[i];
+
+        if (last.find(A[i]) != last.end())
+            dp[i + 1] -= dp[last[A[i]]];
+
+        last[A[i]] = i;
+    }
+
+    // Remove the empty subsequence.
+    return dp[n] - 1;
+}
+
+
+int main() {
+    ios::sync_with_stdio(false);
+#ifndef NEAL_DEBUG
+    cin.tie(nullptr);
+#endif
+
+    int N;
+    cin >> N;
+    vector<int64_t> A(N);
+
+    for (auto &a : A)
+        cin >> a;
+
+    cout << distinct_subsequences(A) << '\n';
+}

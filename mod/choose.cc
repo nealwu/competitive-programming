@@ -119,10 +119,10 @@ struct _m_int {
         _m_int product = 1;
         int v = val;
 
-        while (v >= SAVE_INV) {
+        do {
             product *= MOD - MOD / v;
             v = MOD % v;
-        }
+        } while (v >= SAVE_INV);
 
         return product * save_inv[v];
     }
@@ -157,16 +157,16 @@ extern const int MOD = 998244353;
 using mod_int = _m_int<MOD>;
 
 
-vector<mod_int> _factorial = {1, 1}, _inv_factorial = {1, 1};
+vector<mod_int> _factorial = {1}, _inv_factorial = {1};
 
 void prepare_factorials(int64_t maximum) {
-    static int64_t prepared_maximum = 1;
+    static int64_t prepared_maximum = 0;
 
     if (maximum <= prepared_maximum)
         return;
 
     // Prevent increasing maximum by only 1 each time.
-    maximum += maximum / 64;
+    maximum += maximum / 100;
     _factorial.resize(maximum + 1);
     _inv_factorial.resize(maximum + 1);
 

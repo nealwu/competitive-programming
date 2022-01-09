@@ -444,7 +444,7 @@ namespace FFT {
         return result;
     }
 
-    // Multiplies many polynomials whose total degree is n in O(n log^2 n).
+    // Multiplies many polynomials whose total degree is n in O(n log n log(polynomials.size())).
     template<typename T>
     vector<T> mod_multiply_all(const vector<vector<T>> &polynomials, const int mod, bool split) {
         if (polynomials.empty())
@@ -968,6 +968,7 @@ struct bignum {
         return result;
     }
 
+    // Note: this has at most 4^(-iterations) probability of failure (declaring a composite number as prime).
     bool miller_rabin(int iterations = 20) const {
         const bignum &n = *this;
 
