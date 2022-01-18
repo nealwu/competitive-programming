@@ -7,7 +7,7 @@ using namespace std;
 
 const int INF = int(1e9) + 5;
 
-// Warning: when choosing flow_t, make sure it can handle the sum of flows, not just individual flows.
+// Warning: flow_t must be able to handle the sum of flows, not just individual edges.
 template<typename flow_t>
 struct dinic {
     struct edge {

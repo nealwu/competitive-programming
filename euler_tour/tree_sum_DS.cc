@@ -281,7 +281,8 @@ struct LCA {
     }
 
     // Given a subset of k tree nodes, computes the minimal subtree that contains all the nodes (at most 2k - 1 nodes).
-    // Returns a list of {node, parent} for every node in the subtree. Runs in O(k log k).
+    // Returns a list of {node, parent} for every node in the subtree sorted by tour index. Runs in O(k log k).
+    // Note that all parents also appear as a node in the return value, and nodes[0].first is the compressed root.
     vector<pair<int, int>> compress_tree(vector<int> nodes) const {
         if (nodes.empty())
             return {};

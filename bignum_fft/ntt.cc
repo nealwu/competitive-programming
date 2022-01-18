@@ -171,10 +171,9 @@ struct NTT {
     }
 
     static int round_up_power_two(int n) {
-        while (n & (n - 1))
-            n = (n | (n - 1)) + 1;
-
-        return max(n, 1);
+        int bit = highest_bit(n);
+        bit += bit < 0 || 1 << bit < n;
+        return 1 << bit;
     }
 
     // Given n (a power of two), finds k such that n == 1 << k.

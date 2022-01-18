@@ -68,7 +68,7 @@ struct weighted_LCA {
     int n = 0;
     vector<vector<edge>> adj;
     vector<int> parent, depth, subtree_size;
-    vector<T_weight> weight_depth, up_weight;
+    vector<T_weight> weighted_depth, up_weight;
     vector<int> euler, first_occurrence;
     vector<int> tour_start, tour_end, postorder;
     vector<int> tour_list, rev_tour_list;
@@ -91,7 +91,7 @@ struct weighted_LCA {
         parent.resize(n);
         depth.resize(n);
         subtree_size.resize(n);
-        weight_depth.resize(n);
+        weighted_depth.resize(n);
         up_weight.assign(n, 0);
         first_occurrence.resize(n);
         tour_start.resize(n);
@@ -130,7 +130,7 @@ struct weighted_LCA {
         parent[node] = par;
         depth[node] = par < 0 ? 0 : depth[par] + 1;
         subtree_size[node] = 1;
-        weight_depth[node] = weight;
+        weighted_depth[node] = weight;
 
         // Erase the edge to parent.
         erase_edge(node, par);
@@ -206,7 +206,7 @@ struct weighted_LCA {
     pair<T_weight, array<int, 2>> get_diameter() const {
         assert(built);
 
-        // We find the maximum of weight_depth[u] - 2 * weight_depth[x] + weight_depth[v]
+        // We find the maximum of weighted_depth[u] - 2 * weighted_depth[x] + weighted_depth[v]
         // where u, x, v occur in order in the Euler tour.
         pair<T_weight, int> u_max = {-1, -1};
         pair<T_weight, int> ux_max = {-1, -1};
@@ -214,9 +214,9 @@ struct weighted_LCA {
 
         for (int node : euler) {
             if (node < 0) break;
-            u_max = max(u_max, {weight_depth[node], node});
-            ux_max = max(ux_max, {u_max.first - 2 * weight_depth[node], u_max.second});
-            uxv_max = max(uxv_max, {ux_max.first + weight_depth[node], {ux_max.second, node}});
+            u_max = max(u_max, {weighted_depth[node], node});
+            ux_max = max(ux_max, {u_max.first - 2 * weighted_depth[node], u_max.second});
+            uxv_max = max(uxv_max, {ux_max.first + weighted_depth[node], {ux_max.second, node}});
         }
 
         return uxv_max;
@@ -253,7 +253,7 @@ struct weighted_LCA {
     }
 
     T_weight get_weighted_dist(int a, int b) const {
-        return weight_depth[a] + weight_depth[b] - 2 * weight_depth[get_lca(a, b)];
+        return weighted_depth[a] + weighted_depth[b] - 2 * weighted_depth[get_lca(a, b)];
     }
 
     // Returns the child of `a` that is an ancestor of `b`. Assumes `a` is a strict ancestor of `b`.
@@ -305,7 +305,8 @@ struct weighted_LCA {
     }
 
     // Given a subset of k tree nodes, computes the minimal subtree that contains all the nodes (at most 2k - 1 nodes).
-    // Returns a list of {node, parent} for every node in the subtree. Runs in O(k log k).
+    // Returns a list of {node, parent} for every node in the subtree sorted by tour index. Runs in O(k log k).
+    // Note that all parents also appear as a node in the return value, and nodes[0].first is the compressed root.
     vector<pair<int, int>> compress_tree(vector<int> nodes) const {
         if (nodes.empty())
             return {};

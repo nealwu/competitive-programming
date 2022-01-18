@@ -138,7 +138,7 @@ struct centroid_decomposition {
     vector<int> subtree_size;
     vector<int> centroid_parent;
     vector<int> subroot;
-    vector<int64_t> weight_depth;
+    vector<int64_t> weighted_depth;
     vector<int> nodes;
 
     centroid_decomposition(int _N = 0) {
@@ -152,7 +152,7 @@ struct centroid_decomposition {
         subtree_size.resize(N);
         centroid_parent.assign(N, -1);
         subroot.resize(N);
-        weight_depth.resize(N);
+        weighted_depth.resize(N);
     }
 
     void add_edge(int u, int v, int64_t weight = 0) {
@@ -181,7 +181,7 @@ struct centroid_decomposition {
         depth[node] = parent < 0 ? 0 : depth[parent] + 1;
         subtree_size[node] = 1;
         subroot[node] = sub;
-        weight_depth[node] = weight;
+        weighted_depth[node] = weight;
         nodes.push_back(node);
 
         for (edge &e : adj[node])
@@ -215,7 +215,7 @@ struct centroid_decomposition {
         vector<int64_t> sorted_weights(n);
 
         for (int i = 0; i < n; i++)
-            sorted_weights[i] = weight_depth[nodes[i]];
+            sorted_weights[i] = weighted_depth[nodes[i]];
 
         sort(sorted_weights.begin(), sorted_weights.end());
         fenwick_tree<int64_t> tree(n);
@@ -228,13 +228,13 @@ struct centroid_decomposition {
 
             // Avoid paths within the same subtree by querying each subtree before updating it.
             for (int k = i; k < j; k++) {
-                int64_t maximum = K - weight_depth[nodes[k]];
+                int64_t maximum = K - weighted_depth[nodes[k]];
                 int position = int(upper_bound(sorted_weights.begin(), sorted_weights.end(), maximum) - sorted_weights.begin());
                 pairs += tree.query(position);
             }
 
             for (int k = i; k < j; k++) {
-                int position = int(lower_bound(sorted_weights.begin(), sorted_weights.end(), weight_depth[nodes[k]]) - sorted_weights.begin());
+                int position = int(lower_bound(sorted_weights.begin(), sorted_weights.end(), weighted_depth[nodes[k]]) - sorted_weights.begin());
                 tree.update(position, +1);
             }
         }

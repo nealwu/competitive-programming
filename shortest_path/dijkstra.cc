@@ -6,25 +6,26 @@
 #include <vector>
 using namespace std;
 
-const int64_t INF64 = int64_t(2e18) + 5;
-
+template<typename T_weight>
 struct Dijkstra {
+    const T_weight W_INF = numeric_limits<T_weight>::max() / 2;
+
     struct edge {
         int node = -1;
-        int64_t weight = 0;
+        T_weight weight = 0;
 
         edge() {}
 
-        edge(int _node, int64_t _weight) : node(_node), weight(_weight) {}
+        edge(int _node, T_weight _weight) : node(_node), weight(_weight) {}
     };
 
     struct state {
-        int64_t dist;
+        T_weight dist;
         int node;
 
         state() {}
 
-        state(int64_t _dist, int _node) : dist(_dist), node(_node) {}
+        state(T_weight _dist, int _node) : dist(_dist), node(_node) {}
 
         bool operator<(const state &other) const {
             return dist > other.dist;
@@ -33,7 +34,7 @@ struct Dijkstra {
 
     int n;
     vector<vector<edge>> adj;
-    vector<int64_t> dist;
+    vector<T_weight> dist;
     vector<int> parent;
 
     Dijkstra(int _n = 0) {
@@ -45,16 +46,16 @@ struct Dijkstra {
         adj.assign(n, {});
     }
 
-    void add_directional_edge(int a, int b, int64_t weight) {
+    void add_directional_edge(int a, int b, T_weight weight) {
         adj[a].emplace_back(b, weight);
     }
 
-    void add_bidirectional_edge(int a, int b, int64_t weight) {
+    void add_bidirectional_edge(int a, int b, T_weight weight) {
         add_directional_edge(a, b, weight);
         add_directional_edge(b, a, weight);
     }
 
-    void dijkstra_check(priority_queue<state> &pq, int node, int from, int64_t new_dist) {
+    void dijkstra_check(priority_queue<state> &pq, int node, int from, T_weight new_dist) {
         if (new_dist < dist[node]) {
             dist[node] = new_dist;
             parent[node] = from;
@@ -64,7 +65,7 @@ struct Dijkstra {
 
     void dijkstra(const vector<int> &source) {
         if (n == 0) return;
-        dist.assign(n, INF64);
+        dist.assign(n, W_INF);
         parent.assign(n, -1);
         priority_queue<state> pq;
 
@@ -93,7 +94,7 @@ int main() {
 
     int N, M;
     cin >> N >> M;
-    Dijkstra dijkstra(N);
+    Dijkstra<int64_t> dijkstra(N);
 
     for (int i = 0; i < M; i++) {
         int a, b;

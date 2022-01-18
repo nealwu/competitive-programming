@@ -6,8 +6,7 @@
 #include <vector>
 using namespace std;
 
-// Warning: when choosing flow_t and cost_t, make sure they can handle the sum of flows and costs, not just individual
-// flows and costs.
+// Warning: flow_t and cost_t must be able to handle the sums of flows and costs, not just individual edges.
 template<typename flow_t, typename cost_t>
 struct min_cost_flow {
     const cost_t COST_INF = numeric_limits<cost_t>::max() / 2;

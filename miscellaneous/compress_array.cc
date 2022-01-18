@@ -1,4 +1,5 @@
 
+// Compresses the values in arr to be in the range [0, n).
 template<typename T>
 vector<int> compress_array(const vector<T> &arr) {
     int n = int(arr.size());
