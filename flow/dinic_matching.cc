@@ -40,31 +40,33 @@ struct dinic_matching {
         adj[a].push_back(b);
     }
 
-    void bfs_check(queue<int> &q, int left, int new_dist) {
-        if (new_dist < dist[left]) {
-            dist[left] = new_dist;
-            q.push(left);
-        }
-    }
-
     bool bfs() {
+        vector<int> q(n);
+        int q_start = 0, q_end = 0;
+
+        auto bfs_check = [&](int node, int new_dist) -> void {
+            if (new_dist < dist[node]) {
+                dist[node] = new_dist;
+                q[q_end++] = node;
+            }
+        };
+
         dist.assign(n, INF);
-        queue<int> q;
 
         for (int i = 0; i < n; i++)
             if (!matched[i])
-                bfs_check(q, i, 0);
+                bfs_check(i, 0);
 
         bool has_path = false;
 
-        while (!q.empty()) {
-            int left = q.front(); q.pop();
+        while (q_start < q_end) {
+            int left = q[q_start++];
 
             for (int right : adj[left])
                 if (prv[right] < 0)
                     has_path = true;
                 else
-                    bfs_check(q, prv[right], dist[left] + 1);
+                    bfs_check(prv[right], dist[left] + 1);
         }
 
         return has_path;

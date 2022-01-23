@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <iostream>
 #include <queue>
@@ -7,17 +8,20 @@ using namespace std;
 
 const int INF = int(1e9) + 5;
 
+enum edge_type : uint8_t { DIRECTIONAL, DIRECTIONAL_REVERSE, BIDIRECTIONAL };
+
 // Warning: flow_t must be able to handle the sum of flows, not just individual edges.
 template<typename flow_t>
 struct dinic {
     struct edge {
         int node, rev;
-        flow_t capacity, original;
+        flow_t capacity;
+        edge_type type;
 
         edge() {}
 
-        edge(int _node, int _rev, flow_t _capacity)
-            : node(_node), rev(_rev), capacity(_capacity), original(_capacity) {}
+        edge(int _node, int _rev, flow_t _capacity, edge_type _type)
+            : node(_node), rev(_rev), capacity(_capacity), type(_type) {}
     };
 
     int V = -1;
@@ -39,45 +43,47 @@ struct dinic {
         flow_called = false;
     }
 
-    void _add_edge(int u, int v, flow_t capacity1, flow_t capacity2) {
-        assert(0 <= u && u < V && 0 <= v && v < V);
+    void _add_edge(int u, int v, flow_t capacity1, flow_t capacity2, edge_type type1, edge_type type2) {
+        assert(0 <= min(u, v) && max(u, v) < V);
         assert(capacity1 >= 0 && capacity2 >= 0);
-        edge uv_edge(v, int(adj[v].size()) + (u == v ? 1 : 0), capacity1);
-        edge vu_edge(u, int(adj[u].size()), capacity2);
+        edge uv_edge(v, int(adj[v].size()) + (u == v ? 1 : 0), capacity1, type1);
+        edge vu_edge(u, int(adj[u].size()), capacity2, type2);
         adj[u].push_back(uv_edge);
         adj[v].push_back(vu_edge);
     }
 
     void add_directional_edge(int u, int v, flow_t capacity) {
-        _add_edge(u, v, capacity, 0);
+        _add_edge(u, v, capacity, 0, DIRECTIONAL, DIRECTIONAL_REVERSE);
     }
 
     void add_bidirectional_edge(int u, int v, flow_t capacity) {
-        _add_edge(u, v, capacity, capacity);
+        _add_edge(u, v, capacity, capacity, BIDIRECTIONAL, BIDIRECTIONAL);
     }
 
     edge &reverse_edge(const edge &e) {
         return adj[e.node][e.rev];
     }
 
-    void bfs_check(queue<int> &q, int node, int new_dist) {
-        if (new_dist < dist[node]) {
-            dist[node] = new_dist;
-            q.push(node);
-        }
-    }
-
     bool bfs(int source, int sink) {
-        dist.assign(V, INF);
-        queue<int> q;
-        bfs_check(q, source, 0);
+        vector<int> q(V);
+        int q_start = 0, q_end = 0;
 
-        while (!q.empty()) {
-            int top = q.front(); q.pop();
+        auto bfs_check = [&](int node, int new_dist) -> void {
+            if (new_dist < dist[node]) {
+                dist[node] = new_dist;
+                q[q_end++] = node;
+            }
+        };
+
+        dist.assign(V, INF);
+        bfs_check(source, 0);
+
+        while (q_start < q_end) {
+            int top = q[q_start++];
 
             for (edge &e : adj[top])
                 if (e.capacity > 0)
-                    bfs_check(q, e.node, dist[top] + 1);
+                    bfs_check(e.node, dist[top] + 1);
         }
 
         return dist[sink] < INF;
@@ -154,10 +160,12 @@ struct dinic {
         vector<pair<flow_t, pair<int, int>>> cut;
 
         for (int node = 0; node < V; node++)
-            if (reachable[node])
-                for (edge &e : adj[node])
-                    if (!reachable[e.node] && e.capacity < e.original)
-                        cut.emplace_back(e.original - e.capacity, make_pair(node, e.node));
+            for (edge &e : adj[node])
+                if (reachable[node] && !reachable[e.node] && e.type != DIRECTIONAL_REVERSE) {
+                    flow_t rev_cap = reverse_edge(e).capacity;
+                    flow_t original_cap = e.type == BIDIRECTIONAL ? rev_cap / 2 : rev_cap;
+                    cut.emplace_back(original_cap, make_pair(node, e.node));
+                }
 
         return cut;
     }
@@ -177,10 +185,10 @@ struct dinic {
 // There are also T tools to help complete the projects; for each project, you know which of the tools it requires.
 // The i-th tool costs tools_i money, but once purchased it can be used for as many projects as needed.
 // What is the maximum amount of money you can end up with by choosing the optimal subset of projects?
+// Warning: cost_t must be able to handle the sum of costs, not just individual amounts.
 template<typename cost_t>
 struct projects_and_tools {
-    int P, T;
-    int V, source, sink;
+    int P, T, source, sink;
     dinic<cost_t> graph;
     cost_t project_total;
 
@@ -198,10 +206,11 @@ struct projects_and_tools {
     void init(int _P, int _T) {
         P = _P;
         T = _T;
-        V = P + T + 2;
+        int V = P + T + 2;
         source = V - 2;
         sink = V - 1;
         graph.init(V);
+        project_total = 0;
     }
 
     template<typename T_array>
@@ -215,16 +224,20 @@ struct projects_and_tools {
     void set_projects(const T_array &projects) {
         project_total = 0;
 
-        for (int i = 0; i < P; i++) {
-            graph.add_directional_edge(source, i, projects[i]);
-            project_total += projects[i];
-        }
+        for (int i = 0; i < P; i++)
+            if (projects[i] >= 0) {
+                graph.add_directional_edge(source, i, projects[i]);
+                project_total += projects[i];
+            }
     }
 
     template<typename T_array>
     void set_tools(const T_array &tools) {
         for (int i = 0; i < T; i++)
-            graph.add_directional_edge(P + i, sink, tools[i]);
+            if (tools[i] >= 0)
+                graph.add_directional_edge(P + i, sink, tools[i]);
+            else
+                project_total += -tools[i];
     }
 
     void add_dependency(int project, int tool) {
@@ -233,9 +246,9 @@ struct projects_and_tools {
         graph.add_directional_edge(project, P + tool, numeric_limits<cost_t>::max());
     }
 
-    // This indicates that project p1 also depends on all the tools project p2 depends on.
+    // This indicates that project `p1` also depends on all the tools project `p2` depends on.
     void add_project_dependency(int p1, int p2) {
-        assert(0 <= p1 && p1 < P && 0 <= p2 && p2 < P);
+        assert(0 <= min(p1, p2) && max(p1, p2) < P);
         graph.add_directional_edge(p1, p2, numeric_limits<cost_t>::max());
     }
 
@@ -251,13 +264,13 @@ struct projects_and_tools {
             if (cut_edge.second.first == source)
                 chosen[cut_edge.second.second] = false;
 
-        vector<int> result;
+        vector<int> solution;
 
         for (int i = 0; i < P; i++)
             if (chosen[i])
-                result.push_back(i);
+                solution.push_back(i);
 
-        return result;
+        return solution;
     }
 };
 

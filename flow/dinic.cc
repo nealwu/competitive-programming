@@ -8,17 +8,20 @@ using namespace std;
 
 const int INF = int(1e9) + 5;
 
+enum edge_type : uint8_t { DIRECTIONAL, DIRECTIONAL_REVERSE, BIDIRECTIONAL };
+
 // Warning: flow_t must be able to handle the sum of flows, not just individual edges.
 template<typename flow_t>
 struct dinic {
     struct edge {
         int node, rev;
-        flow_t capacity, original;
+        flow_t capacity;
+        edge_type type;
 
         edge() {}
 
-        edge(int _node, int _rev, flow_t _capacity)
-            : node(_node), rev(_rev), capacity(_capacity), original(_capacity) {}
+        edge(int _node, int _rev, flow_t _capacity, edge_type _type)
+            : node(_node), rev(_rev), capacity(_capacity), type(_type) {}
     };
 
     int V = -1;
@@ -40,45 +43,47 @@ struct dinic {
         flow_called = false;
     }
 
-    void _add_edge(int u, int v, flow_t capacity1, flow_t capacity2) {
-        assert(0 <= u && u < V && 0 <= v && v < V);
+    void _add_edge(int u, int v, flow_t capacity1, flow_t capacity2, edge_type type1, edge_type type2) {
+        assert(0 <= min(u, v) && max(u, v) < V);
         assert(capacity1 >= 0 && capacity2 >= 0);
-        edge uv_edge(v, int(adj[v].size()) + (u == v ? 1 : 0), capacity1);
-        edge vu_edge(u, int(adj[u].size()), capacity2);
+        edge uv_edge(v, int(adj[v].size()) + (u == v ? 1 : 0), capacity1, type1);
+        edge vu_edge(u, int(adj[u].size()), capacity2, type2);
         adj[u].push_back(uv_edge);
         adj[v].push_back(vu_edge);
     }
 
     void add_directional_edge(int u, int v, flow_t capacity) {
-        _add_edge(u, v, capacity, 0);
+        _add_edge(u, v, capacity, 0, DIRECTIONAL, DIRECTIONAL_REVERSE);
     }
 
     void add_bidirectional_edge(int u, int v, flow_t capacity) {
-        _add_edge(u, v, capacity, capacity);
+        _add_edge(u, v, capacity, capacity, BIDIRECTIONAL, BIDIRECTIONAL);
     }
 
     edge &reverse_edge(const edge &e) {
         return adj[e.node][e.rev];
     }
 
-    void bfs_check(queue<int> &q, int node, int new_dist) {
-        if (new_dist < dist[node]) {
-            dist[node] = new_dist;
-            q.push(node);
-        }
-    }
-
     bool bfs(int source, int sink) {
-        dist.assign(V, INF);
-        queue<int> q;
-        bfs_check(q, source, 0);
+        vector<int> q(V);
+        int q_start = 0, q_end = 0;
 
-        while (!q.empty()) {
-            int top = q.front(); q.pop();
+        auto bfs_check = [&](int node, int new_dist) -> void {
+            if (new_dist < dist[node]) {
+                dist[node] = new_dist;
+                q[q_end++] = node;
+            }
+        };
+
+        dist.assign(V, INF);
+        bfs_check(source, 0);
+
+        while (q_start < q_end) {
+            int top = q[q_start++];
 
             for (edge &e : adj[top])
                 if (e.capacity > 0)
-                    bfs_check(q, e.node, dist[top] + 1);
+                    bfs_check(e.node, dist[top] + 1);
         }
 
         return dist[sink] < INF;
@@ -155,10 +160,12 @@ struct dinic {
         vector<pair<flow_t, pair<int, int>>> cut;
 
         for (int node = 0; node < V; node++)
-            if (reachable[node])
-                for (edge &e : adj[node])
-                    if (!reachable[e.node] && e.capacity < e.original)
-                        cut.emplace_back(e.original - e.capacity, make_pair(node, e.node));
+            for (edge &e : adj[node])
+                if (reachable[node] && !reachable[e.node] && e.type != DIRECTIONAL_REVERSE) {
+                    flow_t rev_cap = reverse_edge(e).capacity;
+                    flow_t original_cap = e.type == BIDIRECTIONAL ? rev_cap / 2 : rev_cap;
+                    cut.emplace_back(original_cap, make_pair(node, e.node));
+                }
 
         return cut;
     }
@@ -210,6 +217,7 @@ int main() {
 
     int64_t answer = graph.flow(0, N - 1);
     cout << answer << '\n';
+
     auto cut = graph.min_cut(0);
     int64_t cut_sum = 0;
 

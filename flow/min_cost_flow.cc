@@ -45,7 +45,7 @@ struct min_cost_flow {
     }
 
     void add_directional_edge(int u, int v, flow_t capacity, cost_t cost) {
-        assert(0 <= u && u < V && 0 <= v && v < V);
+        assert(0 <= min(u, v) && max(u, v) < V);
         assert(capacity >= 0);
         edge uv_edge(v, int(adj[v].size()) + (u == v ? 1 : 0), capacity, cost);
         edge vu_edge(u, int(adj[u].size()), 0, -cost);
