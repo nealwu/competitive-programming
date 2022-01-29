@@ -14,7 +14,7 @@ struct identity {
 // A stable sort that sorts in passes of `bits_per_pass` bits at a time.
 template<typename T, typename T_extract_key = identity>
 void radix_sort(vector<T> &data, int bits_per_pass = 10, const T_extract_key &extract_key = identity()) {
-    if (data.size() < 256) {
+    if (int64_t(data.size()) * (64 - __builtin_clzll(data.size())) < 2 * (1 << bits_per_pass)) {
         stable_sort(data.begin(), data.end(), [&](const T &a, const T &b) {
             return extract_key(a) < extract_key(b);
         });
@@ -299,7 +299,7 @@ struct UnsignedInplaceSorter
     template<typename T>
     inline static uint8_t current_byte(T && elem, void * sort_data)
     {
-        return CurrentSubKey::sub_key(elem, sort_data) >> ShiftAmount;
+        return uint8_t(CurrentSubKey::sub_key(elem, sort_data) >> ShiftAmount);
     }
     template<typename It, typename ExtractKey>
     static void sort(It begin, It end, std::ptrdiff_t num_elements, ExtractKey & extract_key, void (*next_sort)(It, It, std::ptrdiff_t, ExtractKey &, void *), void * sort_data)
@@ -329,7 +329,7 @@ struct UnsignedInplaceSorter
             partitions[i].offset = total;
             total += count;
             partitions[i].next_offset = total;
-            remaining_partitions[num_partitions] = i;
+            remaining_partitions[num_partitions] = uint8_t(i);
             ++num_partitions;
         }
         if (num_partitions > 1)
@@ -409,7 +409,7 @@ struct UnsignedInplaceSorter
             {
                 partitions[i].offset = total;
                 total += count;
-                remaining_partitions[num_partitions] = i;
+                remaining_partitions[num_partitions] = uint8_t(i);
                 ++num_partitions;
             }
             partitions[i].next_offset = total;
