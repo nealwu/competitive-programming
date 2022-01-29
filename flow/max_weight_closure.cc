@@ -180,91 +180,81 @@ struct dinic {
     }
 };
 
-// projects_and_tools solves the following problem:
-// There are P projects you can complete. The i-th project gives a reward of projects_i money (or loss if negative).
-// There are also T tools to help complete the projects; for each project, you know which of the tools it requires.
-// The i-th tool costs tools_i (or gain if negative), but once purchased it can be used for as many projects as needed.
-// What is the maximum amount of money you can end up with by choosing the optimal subset of projects?
+// max_weight_closure solves the following problem:
+// There are n projects you can complete. The i-th project gives you a gain (or loss if negative) of P_i money.
+// Projects can have dependencies on other projects; you can do a project as long as you also do all its dependencies.
+// Cyclic dependencies are allowed; if a group of projects is strongly connected, you have to do all of or none of them.
+// See https://en.wikipedia.org/wiki/Closure_problem. "Project A depends on project B" means an A -> B edge.
 // Warning: cost_t must be able to handle the sum of costs, not just individual amounts.
 template<typename cost_t>
-struct projects_and_tools {
-    int P, T, source, sink;
+struct max_weight_closure {
+    int n, source, sink;
     dinic<cost_t> graph;
-    cost_t project_total;
+    vector<bool> chosen;
+    cost_t positive_total = 0;
 
-    projects_and_tools() {}
+    max_weight_closure() {}
 
-    projects_and_tools(int _P, int _T) {
-        init(_P, _T);
+    max_weight_closure(int _n) {
+        init(_n);
     }
 
     template<typename T_array>
-    projects_and_tools(const T_array &projects, const T_array &tools) {
-        init(projects, tools);
+    max_weight_closure(const T_array &projects) {
+        init(projects);
     }
 
-    void init(int _P, int _T) {
-        P = _P;
-        T = _T;
-        int V = P + T + 2;
+    void init(int _n) {
+        n = _n;
+        int V = n + 2;
         source = V - 2;
         sink = V - 1;
         graph.init(V);
-        project_total = 0;
     }
 
     template<typename T_array>
-    void init(const T_array &projects, const T_array &tools) {
-        init(int(projects.size()), int(tools.size()));
+    void init(const T_array &projects) {
+        init(int(projects.size()));
         set_projects(projects);
-        set_tools(tools);
     }
 
     template<typename T_array>
     void set_projects(const T_array &projects) {
-        for (int i = 0; i < P; i++)
+        chosen.assign(n, false);
+        positive_total = 0;
+
+        for (int i = 0; i < n; i++)
             if (projects[i] >= 0) {
                 graph.add_directional_edge(source, i, projects[i]);
-                project_total += projects[i];
+                positive_total += projects[i];
+                chosen[i] = true;
+            } else {
+                graph.add_directional_edge(i, sink, -projects[i]);
             }
     }
 
-    template<typename T_array>
-    void set_tools(const T_array &tools) {
-        for (int i = 0; i < T; i++)
-            if (tools[i] >= 0)
-                graph.add_directional_edge(P + i, sink, tools[i]);
-            else
-                project_total += -tools[i];
-    }
-
-    void add_dependency(int project, int tool) {
-        assert(0 <= project && project < P);
-        assert(0 <= tool && tool < T);
-        graph.add_directional_edge(project, P + tool, numeric_limits<cost_t>::max());
-    }
-
-    // This indicates that project `p1` also depends on all the tools project `p2` depends on.
-    void add_project_dependency(int p1, int p2) {
-        assert(0 <= min(p1, p2) && max(p1, p2) < P);
-        graph.add_directional_edge(p1, p2, numeric_limits<cost_t>::max());
+    // Project `a` depends on project `b`.
+    void add_dependency(int a, int b) {
+        assert(0 <= min(a, b) && max(a, b) < n);
+        graph.add_directional_edge(a, b, numeric_limits<cost_t>::max());
     }
 
     cost_t solve() {
-        return project_total - graph.flow(source, sink);
+        return positive_total - graph.flow(source, sink);
     }
 
     vector<int> chosen_projects() {
         auto cut = graph.min_cut(source);
-        vector<bool> chosen(P, true);
 
         for (auto &cut_edge : cut)
             if (cut_edge.second.first == source)
                 chosen[cut_edge.second.second] = false;
+            else if (cut_edge.second.second == sink)
+                chosen[cut_edge.second.first] = true;
 
         vector<int> solution;
 
-        for (int i = 0; i < P; i++)
+        for (int i = 0; i < n; i++)
             if (chosen[i])
                 solution.push_back(i);
 
@@ -273,9 +263,16 @@ struct projects_and_tools {
 };
 
 
-// Solution to https://codeforces.com/contest/1082/problem/G
+template<typename A, typename B> ostream& operator<<(ostream &os, const pair<A, B> &p) { return os << '(' << p.first << ", " << p.second << ')'; }
+template<typename T_container, typename T = typename enable_if<!is_same<T_container, string>::value, typename T_container::value_type>::type> ostream& operator<<(ostream &os, const T_container &v) { os << '{'; string sep; for (const T &x : v) os << sep << x, sep = ", "; return os << '}'; }
 
-template<typename T> ostream& operator<<(ostream &os, const vector<T> &v) { os << "{"; string sep; for (const auto &x : v) os << sep << x, sep = ", "; return os << "}"; }
+void dbg_out() { cerr << endl; }
+template<typename Head, typename... Tail> void dbg_out(Head H, Tail... T) { cerr << ' ' << H; dbg_out(T...); }
+#ifdef NEAL_DEBUG
+#define dbg(...) cerr << "(" << #__VA_ARGS__ << "):", dbg_out(__VA_ARGS__)
+#else
+#define dbg(...)
+#endif
 
 int main() {
     ios::sync_with_stdio(false);
@@ -285,24 +282,34 @@ int main() {
 
     int N, M;
     cin >> N >> M;
-    projects_and_tools<int64_t> solver(M, N);
-    vector<int> vertices(N);
+    max_weight_closure<int64_t> solver(N);
+    vector<int> projects(N);
 
-    for (int &v : vertices)
-        cin >> v;
+    for (auto &p : projects)
+        cin >> p;
 
-    solver.set_tools(vertices);
-    vector<int> edges(M);
+    solver.set_projects(projects);
+    vector<array<int, 2>> edges(M);
 
     for (int i = 0; i < M; i++) {
-        int u, v;
-        cin >> u >> v >> edges[i];
-        u--; v--;
-        solver.add_dependency(i, u);
-        solver.add_dependency(i, v);
+        int a, b;
+        cin >> a >> b;
+        a--; b--;
+        edges[i] = {a, b};
+        solver.add_dependency(a, b);
     }
 
-    solver.set_projects(edges);
-    cout << solver.solve() << '\n';
-    cerr << solver.chosen_projects() << endl;
+    int64_t ans = solver.solve();
+    cout << ans << '\n';
+
+    vector<int> solution = solver.chosen_projects();
+    int64_t sum = 0;
+
+    for (int p : solution)
+        sum += projects[p];
+
+    assert(ans == sum);
+
+    for (auto &e : edges)
+        assert(!(solver.chosen[e[0]] && !solver.chosen[e[1]]));
 }

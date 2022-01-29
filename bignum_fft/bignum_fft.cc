@@ -371,8 +371,7 @@ namespace FFT {
                 }
 
             for (uint64_t &x : result)
-                if (x >= uint64_t(mod))
-                    x %= mod;
+                x %= mod;
 
             return vector<T>(result.begin(), result.end());
         }

@@ -306,8 +306,7 @@ struct NTT {
                 }
 
             for (uint64_t &x : result)
-                if (x >= MOD)
-                    x %= MOD;
+                x %= MOD;
 
             return vector<T>(result.begin(), result.end());
         }
