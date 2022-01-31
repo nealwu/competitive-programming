@@ -186,18 +186,6 @@ struct seg_tree {
         });
     }
 
-    vector<segment> to_array() {
-        for (int i = 1; i < tree_n; i++)
-            push_down(i, tree_n >> highest_bit(i));
-
-        vector<segment> segs(tree_n);
-
-        for (int i = 0; i < tree_n; i++)
-            segs[i] = tree[tree_n + i];
-
-        return segs;
-    }
-
     void update_single(int index, const segment &seg) {
         assert(0 <= index && index < tree_n);
         int position = tree_n + index;
@@ -211,6 +199,18 @@ struct seg_tree {
             position /= 2;
             tree[position].join(tree[2 * position], tree[2 * position + 1]);
         }
+    }
+
+    vector<segment> to_array() {
+        for (int i = 1; i < tree_n; i++)
+            push_down(i, tree_n >> highest_bit(i));
+
+        vector<segment> segs(tree_n);
+
+        for (int i = 0; i < tree_n; i++)
+            segs[i] = tree[tree_n + i];
+
+        return segs;
     }
 
     // Finds the end of the last subarray starting at `first` satisfying `should_join` via binary search in O(log n).

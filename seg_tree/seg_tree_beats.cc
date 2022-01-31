@@ -249,6 +249,21 @@ struct seg_tree_beats {
         });
     }
 
+    void update_single(int index, const segment &seg) {
+        assert(0 <= index && index < tree_n);
+        int position = tree_n + index;
+
+        for (int up = highest_bit(tree_n); up > 0; up--)
+            push_down(position >> up, 1 << up);
+
+        tree[position] = seg;
+
+        while (position > 1) {
+            position /= 2;
+            tree[position].join(tree[2 * position], tree[2 * position + 1]);
+        }
+    }
+
     vector<segment> to_array() {
         for (int i = 1; i < tree_n; i++)
             push_down(i, tree_n >> highest_bit(i));
@@ -350,7 +365,11 @@ int main() {
             tree.update(a, b, segment_change(0, segment_change::SENTINEL, x));
         } else if (type == "set") {
             cin >> x;
-            tree.update(a, b, segment_change(0, x));
+
+            if (b - a == 1)
+                tree.update_single(a, segment(x, 1));
+            else
+                tree.update(a, b, segment_change(0, x));
         } else if (type == "add") {
             cin >> x;
             tree.update(a, b, segment_change(x));

@@ -206,6 +206,60 @@ struct seg_tree {
             apply_and_combine(position, length, change);
         });
     }
+
+    void update_single(int index, const segment &seg) {
+        assert(0 <= index && index < tree_n);
+        int position = tree_n + index;
+
+        for (int up = highest_bit(tree_n); up > 0; up--)
+            push_down(position >> up, 1 << up);
+
+        tree[position] = seg;
+
+        while (position > 1) {
+            position /= 2;
+            tree[position].join(tree[2 * position], tree[2 * position + 1]);
+        }
+    }
+
+    vector<segment> to_array() {
+        for (int i = 1; i < tree_n; i++)
+            push_down(i, tree_n >> highest_bit(i));
+
+        vector<segment> segs(tree_n);
+
+        for (int i = 0; i < tree_n; i++)
+            segs[i] = tree[tree_n + i];
+
+        return segs;
+    }
+
+    // Finds the end of the last subarray starting at `first` satisfying `should_join` via binary search in O(log n).
+    template<typename T_bool>
+    int find_last_subarray(T_bool &&should_join, int n, int first = 0) {
+        assert(0 <= first && first <= n);
+        segment current;
+
+        // Check the degenerate case.
+        if (!should_join(current, current))
+            return first - 1;
+
+        return y_combinator([&](auto search, int position, int start, int end) -> int {
+            if (end <= first) {
+                return end;
+            } else if (first <= start && end <= n && should_join(current, tree[position])) {
+                current.join(tree[position]);
+                return end;
+            } else if (end - start == 1) {
+                return start;
+            }
+
+            push_down(position, end - start);
+            int mid = (start + end) / 2;
+            int left = search(2 * position, start, mid);
+            return left < mid ? left : search(2 * position + 1, mid, end);
+        })(1, 0, tree_n);
+    }
 };
 
 
