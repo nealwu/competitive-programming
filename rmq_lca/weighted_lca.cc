@@ -269,6 +269,9 @@ struct weighted_LCA {
     }
 
     int get_kth_ancestor(int a, int k) const {
+        if (k > depth[a])
+            return -1;
+
         while (a >= 0) {
             int root = heavy_root[a];
 
