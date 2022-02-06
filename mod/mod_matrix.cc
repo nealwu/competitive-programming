@@ -289,6 +289,32 @@ struct mod_matrix {
         return product;
     }
 
+    mod_matrix& operator*=(const mod_int &mult) {
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                values[i][j] *= mult;
+
+        return *this;
+    }
+
+    mod_matrix operator*(const mod_int &mult) const {
+        return mod_matrix(*this) *= mult;
+    }
+
+    mod_matrix& operator+=(const mod_matrix &other) {
+        assert(rows == other.rows && cols == other.cols);
+
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                values[i][j] += other[i][j];
+
+        return *this;
+    }
+
+    mod_matrix operator+(const mod_matrix &other) const {
+        return mod_matrix(*this) += other;
+    }
+
     mod_matrix power(int64_t p) const {
         assert(p >= 0);
         assert(is_square());
