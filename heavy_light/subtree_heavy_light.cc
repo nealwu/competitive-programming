@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <iostream>
 #include <vector>
@@ -347,12 +348,12 @@ struct subtree_heavy_light {
         full_tree.build(vector<segment>(n, initial));
     }
 
-    void update_subtree(int v, const segment_change &change) {
-        full_tree.update(tour_start[v] + (vertex_mode ? 0 : 1), tour_end[v], change);
-    }
-
     segment query_subtree(int v) {
         return full_tree.query(tour_start[v] + (vertex_mode ? 0 : 1), tour_end[v]);
+    }
+
+    void update_subtree(int v, const segment_change &change) {
+        full_tree.update(tour_start[v] + (vertex_mode ? 0 : 1), tour_end[v], change);
     }
 
     template<typename T_tree_op>
@@ -393,6 +394,11 @@ struct subtree_heavy_light {
         process_path(u, v, [&](seg_tree &tree, int a, int b) {
             tree.update(a, b, change);
         });
+    }
+
+    void update_single(int v, const segment &seg) {
+        // If vertex mode we update the node; otherwise we update the edge up from the node.
+        full_tree.update_single(tour_start[v], seg);
     }
 };
 
@@ -445,7 +451,10 @@ int main() {
         if (type == 1) {
             HLD.update_path(a, b, segment_change(x));
         } else if (type == 2) {
-            HLD.update_path(a, b, segment_change(0, x));
+            if ((vertex_mode && a == b) || (!vertex_mode && HLD.parent[a] == b))
+                HLD.update_single(a, segment(x, x));
+            else
+                HLD.update_path(a, b, segment_change(0, x));
         } else if (type <= 4) {
             assert(type == 3 || type == 4);
             segment path = HLD.query_path(a, b);
