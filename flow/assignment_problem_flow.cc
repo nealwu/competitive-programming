@@ -3,6 +3,7 @@
 #include <cassert>
 #include <iostream>
 #include <queue>
+#include <set>
 #include <vector>
 using namespace std;
 
@@ -189,63 +190,58 @@ struct min_cost_flow {
     }
 };
 
-struct assignment_problem {
-    int n, m;
-    vector<vector<int64_t>> costs;
+// Warning: T must be able to handle the sum of costs, not just the individual costs.
+template<typename T>
+pair<T, vector<int>> assignment_problem(const vector<vector<T>> &costs) {
+    int n = int(costs.size());
+    int m = costs.empty() ? 0 : int(costs[0].size());
+    int v = n + m + 2, source = v - 2, sink = v - 1;
+    min_cost_flow<int, T> graph(v);
 
-    assignment_problem(int _n = -1, int _m = -1) : n(_n), m(_m) {
-        if (m < 0)
-            m = n;
+    for (int i = 0; i < n; i++)
+        graph.add_directional_edge(source, i, 1, 0);
 
-        if (n > 0)
-            costs.assign(n, vector<int64_t>(m, 0));
-    }
+    for (int j = 0; j < m; j++)
+        graph.add_directional_edge(n + j, sink, 1, 0);
 
-    template<typename T>
-    assignment_problem(const vector<vector<T>> &_costs) {
-        build(_costs);
-    }
-
-    template<typename T>
-    void build(const vector<vector<T>> &_costs) {
-        n = int(_costs.size());
-        m = _costs.empty() ? 0 : int(_costs[0].size());
-        costs.assign(n, vector<int64_t>(m, 0));
-
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < m; j++)
-                costs[i][j] = _costs[i][j];
-    }
-
-    int64_t solve() {
-        int v = n + m + 2, source = v - 2, sink = v - 1;
-        min_cost_flow<int, int64_t> graph(v);
-
-        for (int i = 0; i < n; i++)
-            graph.add_directional_edge(source, i, 1, 0);
-
+    for (int i = 0; i < n; i++)
         for (int j = 0; j < m; j++)
-            graph.add_directional_edge(n + j, sink, 1, 0);
+            graph.add_directional_edge(i, n + j, 1, costs[i][j]);
 
-        for (int i = 0; i < n; i++)
-            for (int j = 0; j < m; j++)
-                graph.add_directional_edge(i, n + j, 1, costs[i][j]);
+    T total = graph.solve_min_cost_flow(source, sink).second;
+    vector<int> assignment(n, -1);
 
-        return graph.solve_min_cost_flow(source, sink).second;
-    }
-};
+    for (int i = 0; i < n; i++)
+        for (auto &e : graph.adj[i])
+            if (n <= e.node && e.node < n + m && e.capacity == 0)
+                assignment[i] = e.node - n;
+
+    return {total, assignment};
+}
 
 
 int main() {
     int N, M;
     cin >> N >> M;
-    assignment_problem solver;
     vector<vector<int64_t>> costs(N, vector<int64_t>(M, 0));
 
     for (int i = 0; i < N; i++)
         for (int j = 0; j < M; j++)
             cin >> costs[i][j];
 
-    solver.build(costs);
-    cout << solver.solve() << '\n';
+    auto result = assignment_problem(costs);
+    cout << result.first << '\n';
+
+    vector<int> assignment = result.second;
+    set<int> columns;
+    int64_t total = 0;
+
+    for (int i = 0; i < N; i++)
+        if (assignment[i] >= 0) {
+            total += costs[i][assignment[i]];
+            columns.insert(assignment[i]);
+        }
+
+    assert(total == result.first);
+    assert(int(columns.size()) == min(N, M));
 }
