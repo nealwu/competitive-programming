@@ -28,6 +28,26 @@ void sieve(int maximum) {
         }
 }
 
+// Determines whether n is prime in worst case O(sqrt n / log n). Requires having run `sieve` up to at least sqrt(n).
+// If we've run `sieve` up to at least n, takes O(1) time.
+bool is_prime(int64_t n) {
+    int64_t sieve_max = int64_t(smallest_factor.size()) - 1;
+    assert(1 <= n && n <= sieve_max * sieve_max);
+
+    if (n <= sieve_max)
+        return prime[n];
+
+    for (int64_t p : primes) {
+        if (p * p > n)
+            break;
+
+        if (n % p == 0)
+            return false;
+    }
+
+    return true;
+}
+
 // Prime factorizes n in worst case O(sqrt n / log n). Requires having run `sieve` up to at least sqrt(n).
 // If we've run `sieve` up to at least n, takes O(log n) time.
 vector<pair<int64_t, int>> prime_factorize(int64_t n) {
@@ -109,12 +129,19 @@ vector<int64_t> generate_factors(const vector<pair<int64_t, int>> &prime_factors
 }
 
 
-void test_factoring_number(int64_t n, vector<int64_t> expected, bool sorted = false) {
+void test_factoring_number(int64_t n, const vector<int64_t> &expected, bool sorted = false) {
     vector<int64_t> factors = generate_factors(prime_factorize(n), sorted);
     assert(factors == expected);
 }
 
 void test_generate_factors() {
+    sieve(100);
+
+    for (int n = 1; n <= 10000; n++) {
+        vector<pair<int64_t, int>> prime_factors = prime_factorize(n);
+        assert(is_prime(n) == (prime_factors.size() == 1 && prime_factors.front().second == 1));
+    }
+
     sieve(1e5);
 
     test_factoring_number(1, {1});
@@ -141,6 +168,64 @@ void test_generate_factors() {
     sieve(0);
 }
 
+#include <chrono>
+#include <iomanip>
+#include <random>
+
+void test_runtime() {
+    // auto random_address = [] { char *p = new char; delete p; return uint64_t(p); };
+
+    // const uint64_t SEED = chrono::steady_clock::now().time_since_epoch().count() * (random_address() | 1);
+    const uint64_t SEED = 0;
+    mt19937_64 rng(SEED);
+
+    cerr << setprecision(3);
+
+    sieve(2e5);
+
+{
+    const vector<int64_t> OPTIONS = {13071985783, 16510398467, 14387119589, 25092948337, 32149278989};
+
+    long double begin = clock();
+    uint64_t sum = 0;
+
+    for (int iter = 0; iter < 500; iter++) {
+        int64_t n = OPTIONS[rng() % OPTIONS.size()];
+        vector<pair<int64_t, int>> prime_factors = prime_factorize(n);
+
+        vector<int64_t> factors = generate_factors(prime_factors);
+
+        for (int64_t f : factors)
+            sum += f;
+    }
+
+    cerr << "sum = " << sum << endl;
+    cerr << (clock() - begin) / CLOCKS_PER_SEC << 's' << endl;
+}
+
+// {
+//     const vector<int64_t> OPTIONS = {897612484786617600, 748010403988848000, 673209363589963200, 448806242393308800, 374005201994424000};
+
+//     long double begin = clock();
+//     uint64_t sum = 0;
+
+//     for (int iter = 0; iter < 1000; iter++) {
+//         int64_t n = OPTIONS[rng() % OPTIONS.size()];
+//         vector<pair<int64_t, int>> prime_factors = prime_factorize(n);
+
+//         vector<int64_t> factors = generate_factors(prime_factors);
+
+//         for (int64_t f : factors)
+//             sum += f;
+//     }
+
+//     cerr << "sum = " << sum << endl;
+//     cerr << (clock() - begin) / CLOCKS_PER_SEC << 's' << endl;
+// }
+
+    sieve(0);
+}
+
 #include <cmath>
 
 int main() {
@@ -150,6 +235,8 @@ int main() {
 #endif
 
     test_generate_factors();
+
+    test_runtime();
 
     vector<int64_t> inputs;
     int sieve_size = 0;
