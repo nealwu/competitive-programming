@@ -14,6 +14,8 @@ struct dinic_matching {
     vector<int> dist;
     vector<int> right_match, left_match;
     vector<int> edge_index;
+    bool match_called = false;
+    int matches = 0;
 
     dinic_matching() {
         init(0, 0);
@@ -27,6 +29,8 @@ struct dinic_matching {
         n = _n;
         m = _m;
         adj.assign(n, {});
+        match_called = false;
+        matches = 0;
     }
 
     void add_edge(int a, int b) {
@@ -88,9 +92,10 @@ struct dinic_matching {
     }
 
     int match() {
+        match_called = true;
         right_match.assign(n, -1);
         left_match.assign(m, -1);
-        int matches = 0;
+        matches = 0;
 
         while (bfs()) {
             edge_index.assign(n, 0);
@@ -129,7 +134,7 @@ struct dinic_matching {
 
     // The min vertex cover in a bipartite graph corresponds to the min cut in its flow graph.
     vector<int> min_vertex_cover() {
-        int match_size = match();
+        assert(match_called);
         solve_reachable();
         vector<int> cover;
 
@@ -141,13 +146,13 @@ struct dinic_matching {
             if (reachable_right[i])
                 cover.push_back(n + i);
 
-        assert(int(cover.size()) == match_size);
+        assert(int(cover.size()) == matches);
         return cover;
     }
 
     // The max independent set is the complement of the min vertex cover.
     vector<int> max_independent_set() {
-        int match_size = match();
+        assert(match_called);
         solve_reachable();
         vector<int> independent_set;
 
@@ -159,7 +164,7 @@ struct dinic_matching {
             if (!reachable_right[i])
                 independent_set.push_back(n + i);
 
-        assert(int(independent_set.size()) + match_size == n + m);
+        assert(int(independent_set.size()) + matches == n + m);
         return independent_set;
     }
 };
