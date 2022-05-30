@@ -12,9 +12,8 @@ struct dinic_matching {
     int n, m;
     vector<vector<int>> adj;
     vector<int> dist;
-    vector<bool> matched;
+    vector<int> right_match, left_match;
     vector<int> edge_index;
-    vector<int> prv;
 
     dinic_matching() {
         init(0, 0);
@@ -28,10 +27,6 @@ struct dinic_matching {
         n = _n;
         m = _m;
         adj.assign(n, {});
-        dist.resize(n);
-        matched.resize(n);
-        edge_index.resize(n);
-        prv.resize(m);
     }
 
     void add_edge(int a, int b) {
@@ -43,6 +38,7 @@ struct dinic_matching {
     bool bfs() {
         vector<int> q(n);
         int q_start = 0, q_end = 0;
+        dist.assign(n, INF);
 
         auto bfs_check = [&](int node, int new_dist) -> void {
             if (new_dist < dist[node]) {
@@ -51,10 +47,8 @@ struct dinic_matching {
             }
         };
 
-        dist.assign(n, INF);
-
         for (int i = 0; i < n; i++)
-            if (!matched[i])
+            if (right_match[i] < 0)
                 bfs_check(i, 0);
 
         bool has_path = false;
@@ -63,10 +57,10 @@ struct dinic_matching {
             int left = q[q_start++];
 
             for (int right : adj[left])
-                if (prv[right] < 0)
+                if (left_match[right] < 0)
                     has_path = true;
                 else
-                    bfs_check(prv[right], dist[left] + 1);
+                    bfs_check(left_match[right], dist[left] + 1);
         }
 
         return has_path;
@@ -79,9 +73,9 @@ struct dinic_matching {
             int right = adj[left][edge_index[left]++];
             bool solved = false;
 
-            if (prv[right] < 0 || (dist[left] + 1 == dist[prv[right]] && dfs(prv[right]))) {
-                prv[right] = left;
-                matched[left] = true;
+            if (left_match[right] < 0 || (dist[left] + 1 == dist[left_match[right]] && dfs(left_match[right]))) {
+                left_match[right] = left;
+                right_match[left] = right;
                 solved = true;
             }
 
@@ -94,15 +88,15 @@ struct dinic_matching {
     }
 
     int match() {
-        matched.assign(n, false);
-        prv.assign(m, -1);
+        right_match.assign(n, -1);
+        left_match.assign(m, -1);
         int matches = 0;
 
         while (bfs()) {
             edge_index.assign(n, 0);
 
             for (int i = 0; i < n; i++)
-                if (!matched[i] && dfs(i))
+                if (right_match[i] < 0 && dfs(i))
                     matches++;
         }
 
@@ -111,29 +105,32 @@ struct dinic_matching {
 
     vector<bool> reachable_left, reachable_right;
 
-    void reachable_dfs(int left) {
+    void _reachable_dfs(int left) {
         reachable_left[left] = true;
 
         for (int right : adj[left])
-            if (prv[right] != left && !reachable_right[right]) {
+            if (right != right_match[left] && !reachable_right[right]) {
                 reachable_right[right] = true;
-                int next_left = prv[right];
+                int next_left = left_match[right];
 
                 if (next_left >= 0 && !reachable_left[next_left])
-                    reachable_dfs(next_left);
+                    _reachable_dfs(next_left);
             }
+    }
+
+    void solve_reachable() {
+        reachable_left.assign(n, false);
+        reachable_right.assign(m, false);
+
+        for (int i = 0; i < n; i++)
+            if (right_match[i] < 0 && !reachable_left[i])
+                _reachable_dfs(i);
     }
 
     // The min vertex cover in a bipartite graph corresponds to the min cut in its flow graph.
     vector<int> min_vertex_cover() {
         int match_size = match();
-        reachable_left.assign(n, false);
-        reachable_right.assign(m, false);
-
-        for (int i = 0; i < n; i++)
-            if (!matched[i] && !reachable_left[i])
-                reachable_dfs(i);
-
+        solve_reachable();
         vector<int> cover;
 
         for (int i = 0; i < n; i++)
@@ -150,7 +147,8 @@ struct dinic_matching {
 
     // The max independent set is the complement of the min vertex cover.
     vector<int> max_independent_set() {
-        int cover_size = int(min_vertex_cover().size());
+        int match_size = match();
+        solve_reachable();
         vector<int> independent_set;
 
         for (int i = 0; i < n; i++)
@@ -161,7 +159,7 @@ struct dinic_matching {
             if (!reachable_right[i])
                 independent_set.push_back(n + i);
 
-        assert(int(independent_set.size()) + cover_size == n + m);
+        assert(int(independent_set.size()) + match_size == n + m);
         return independent_set;
     }
 };

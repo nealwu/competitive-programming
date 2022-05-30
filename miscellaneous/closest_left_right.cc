@@ -25,14 +25,18 @@ vector<int> closest_left(const vector<T> &values, T_compare &&compare) {
 
 // For every i, finds the smallest j > i such that `compare(values[j], values[i])` is true, or `n` if no such j exists.
 template<typename T, typename T_compare>
-vector<int> closest_right(vector<T> values, T_compare &&compare) {
+vector<int> closest_right(const vector<T> &values, T_compare &&compare) {
     int n = int(values.size());
-    reverse(values.begin(), values.end());
-    vector<int> closest = closest_left(values, compare);
-    reverse(closest.begin(), closest.end());
+    vector<int> closest(n);
+    vector<int> stack;
 
-    for (auto &c : closest)
-        c = n - 1 - c;
+    for (int i = n - 1; i >= 0; i--) {
+        while (!stack.empty() && !compare(values[stack.back()], values[i]))
+            stack.pop_back();
+
+        closest[i] = stack.empty() ? n : stack.back();
+        stack.push_back(i);
+    }
 
     return closest;
 }

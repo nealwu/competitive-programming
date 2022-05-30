@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
+#include <numeric>
 #include <vector>
 using namespace std;
 
@@ -18,13 +19,11 @@ struct bipartite_union_find {
 
     void init(int n) {
         parent.resize(n + 1);
+        iota(parent.begin(), parent.end(), 0);
         size.assign(n + 1, 1);
         bipartite.assign(n + 1, true);
         edge_parity.assign(n + 1, false);
         components = n;
-
-        for (int i = 0; i <= n; i++)
-            parent[i] = i;
     }
 
     int find(int x) {
@@ -54,10 +53,7 @@ struct bipartite_union_find {
 
         if (x_root == y_root) {
             bool consistent = !(edge_parity[x] ^ edge_parity[y] ^ different);
-
-            if (!consistent)
-                bipartite[x_root] = false;
-
+            bipartite[x_root] = bipartite[x_root] && consistent;
             return {false, consistent};
         }
 

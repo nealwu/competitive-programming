@@ -28,7 +28,7 @@ struct dinic {
     vector<vector<edge>> adj;
     vector<int> dist;
     vector<int> edge_index;
-    bool flow_called;
+    bool flow_called = false;
 
     dinic(int vertices = -1) {
         if (vertices >= 0)
@@ -38,8 +38,6 @@ struct dinic {
     void init(int vertices) {
         V = vertices;
         adj.assign(V, {});
-        dist.resize(V);
-        edge_index.resize(V);
         flow_called = false;
     }
 
@@ -67,6 +65,7 @@ struct dinic {
     bool bfs(int source, int sink) {
         vector<int> q(V);
         int q_start = 0, q_end = 0;
+        dist.assign(V, INF);
 
         auto bfs_check = [&](int node, int new_dist) -> void {
             if (new_dist < dist[node]) {
@@ -75,7 +74,6 @@ struct dinic {
             }
         };
 
-        dist.assign(V, INF);
         bfs_check(source, 0);
 
         while (q_start < q_end) {
@@ -140,17 +138,17 @@ struct dinic {
 
     vector<bool> reachable;
 
-    void reachable_dfs(int node) {
+    void _reachable_dfs(int node) {
         reachable[node] = true;
 
         for (edge &e : adj[node])
             if (e.capacity > 0 && !reachable[e.node])
-                reachable_dfs(e.node);
+                _reachable_dfs(e.node);
     }
 
     void solve_reachable(int source) {
         reachable.assign(V, false);
-        reachable_dfs(source);
+        _reachable_dfs(source);
     }
 
     // Returns a list of {capacity, {from_node, to_node}} representing edges in the min cut.

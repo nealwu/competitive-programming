@@ -1,4 +1,5 @@
 #include <iostream>
+#include <numeric>
 #include <vector>
 using namespace std;
 
@@ -14,11 +15,9 @@ struct union_find {
 
     void init(int n) {
         parent.resize(n + 1);
+        iota(parent.begin(), parent.end(), 0);
         size.assign(n + 1, 1);
         components = n;
-
-        for (int i = 0; i <= n; i++)
-            parent[i] = i;
     }
 
     int find(int x) {
