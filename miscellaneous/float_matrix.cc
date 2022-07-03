@@ -34,10 +34,7 @@ struct float_column_vector {
     template<typename T>
     void init(const vector<T> &v) {
         rows = int(v.size());
-        values.resize(rows);
-
-        for (int i = 0; i < rows; i++)
-            values[i] = v[i];
+        values = vector<matrix_float>(v.begin(), v.end());
     }
 
     matrix_float& operator[](int index) { return values[index]; }
@@ -46,6 +43,15 @@ struct float_column_vector {
 
 // Warning: very inefficient for many small matrices of fixed size. For that, use float_matrix_fixed_size.cc instead.
 struct float_matrix {
+    static float_matrix IDENTITY(int n) {
+        float_matrix identity(n);
+
+        for (int i = 0; i < n; i++)
+            identity[i][i] = 1;
+
+        return identity;
+    }
+
     int rows, cols;
     vector<vector<matrix_float>> values;
 
@@ -70,9 +76,10 @@ struct float_matrix {
         cols = v.empty() ? 0 : int(v[0].size());
         values.assign(rows, vector<matrix_float>(cols, 0));
 
-        for (int i = 0; i < rows; i++)
-            for (int j = 0; j < cols; j++)
-                values[i][j] = v[i][j];
+        for (int i = 0; i < rows; i++) {
+            assert(int(v[i].size()) == cols);
+            copy(v[i].begin(), v[i].end(), values[i].begin());
+        }
     }
 
     vector<matrix_float>& operator[](int index) { return values[index]; }
@@ -80,15 +87,6 @@ struct float_matrix {
 
     bool is_square() const {
         return rows == cols;
-    }
-
-    void make_identity() {
-        assert(is_square());
-
-        for (int i = 0; i < rows; i++) {
-            values[i].assign(cols, 0);
-            values[i][i] = 1;
-        }
     }
 
     float_matrix operator*(const float_matrix &other) const {
@@ -119,12 +117,50 @@ struct float_matrix {
         return product;
     }
 
+    float_matrix& operator*=(matrix_float mult) {
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                values[i][j] *= mult;
+
+        return *this;
+    }
+
+    float_matrix operator*(matrix_float mult) const {
+        return float_matrix(*this) *= mult;
+    }
+
+    float_matrix& operator+=(const float_matrix &other) {
+        assert(rows == other.rows && cols == other.cols);
+
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                values[i][j] += other[i][j];
+
+        return *this;
+    }
+
+    float_matrix operator+(const float_matrix &other) const {
+        return float_matrix(*this) += other;
+    }
+
+    float_matrix& operator-=(const float_matrix &other) {
+        assert(rows == other.rows && cols == other.cols);
+
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                values[i][j] -= other[i][j];
+
+        return *this;
+    }
+
+    float_matrix operator-(const float_matrix &other) const {
+        return float_matrix(*this) -= other;
+    }
+
     float_matrix pow(int64_t p) const {
         assert(p >= 0);
         assert(is_square());
-        float_matrix m = *this;
-        float_matrix result(rows);
-        result.make_identity();
+        float_matrix m = *this, result = IDENTITY(rows);
 
         while (p > 0) {
             if (p & 1)
@@ -139,12 +175,12 @@ struct float_matrix {
         return result;
     }
 
-    void print() const {
-        cout << rows << ' ' << cols << '\n';
-
+    void print(ostream &os) const {
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)
-                cout << values[i][j] << (j < cols - 1 ? ' ' : '\n');
+                os << values[i][j] << (j < cols - 1 ? ' ' : '\n');
+
+        os << '\n';
     }
 };
 
@@ -170,10 +206,13 @@ int main() {
     float_matrix m1, m2;
     read_matrix(m1);
     read_matrix(m2);
-    (m1 * m2).print();
+    (m1 + m1).print(cout);
+    (m2 - m2).print(cout);
+    (m1 * m2).print(cout);
 
     read_matrix(m1);
     int64_t p;
     cin >> p;
-    m1.pow(p).print();
+    (m1 * p).print(cout);
+    m1.pow(p).print(cout);
 }

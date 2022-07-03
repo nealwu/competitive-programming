@@ -167,7 +167,7 @@ struct seg_tree {
         assert(0 <= a && a <= b && b <= tree_n);
         segment answer;
 
-        process_range(1, 0, tree_n, a, b, false, [&](int position, int) {
+        process_range(1, 0, tree_n, a, b, false, [&](int position, int) -> void {
             answer.join(tree[position]);
         });
 
@@ -181,7 +181,7 @@ struct seg_tree {
     void update(int a, int b, const segment_change &change) {
         assert(0 <= a && a <= b && b <= tree_n);
 
-        process_range(1, 0, tree_n, a, b, true, [&](int position, int length) {
+        process_range(1, 0, tree_n, a, b, true, [&](int position, int length) -> void {
             apply_and_combine(position, length, change);
         });
     }
@@ -274,7 +274,7 @@ int main() {
             cin >> a >> x;
             a--;
 
-            int index = tree.find_last_subarray([&](const segment &, const segment &add) {
+            int index = tree.find_last_subarray([&](const segment &, const segment &add) -> bool {
                 return add.maximum < x;
             }, N, a);
 
@@ -284,7 +284,7 @@ int main() {
             cin >> a >> x;
             a--;
 
-            int index = tree.find_last_subarray([&](const segment &current, const segment &add) {
+            int index = tree.find_last_subarray([&](const segment &current, const segment &add) -> bool {
                 return current.sum + add.sum < x;
             }, N, a);
 

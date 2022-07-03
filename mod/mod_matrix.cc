@@ -182,10 +182,7 @@ struct mod_column_vector {
     template<typename T>
     void init(const vector<T> &v) {
         rows = int(v.size());
-        values.resize(rows);
-
-        for (int i = 0; i < rows; i++)
-            values[i] = v[i];
+        values = vector<mod_int>(v.begin(), v.end());
     }
 
     mod_int& operator[](int index) { return values[index]; }
@@ -195,6 +192,15 @@ struct mod_column_vector {
 // Warning: very inefficient for many small matrices of fixed size. For that, use mod_matrix_fixed_size.cc instead.
 struct mod_matrix {
     static const uint64_t U64_BOUND = numeric_limits<uint64_t>::max() - uint64_t(MOD) * MOD;
+
+    static mod_matrix IDENTITY(int n) {
+        mod_matrix identity(n);
+
+        for (int i = 0; i < n; i++)
+            identity[i][i] = 1;
+
+        return identity;
+    }
 
     int rows, cols;
     vector<vector<mod_int>> values;
@@ -220,9 +226,10 @@ struct mod_matrix {
         cols = v.empty() ? 0 : int(v[0].size());
         values.assign(rows, vector<mod_int>(cols, 0));
 
-        for (int i = 0; i < rows; i++)
-            for (int j = 0; j < cols; j++)
-                values[i][j] = v[i][j];
+        for (int i = 0; i < rows; i++) {
+            assert(int(v[i].size()) == cols);
+            copy(v[i].begin(), v[i].end(), values[i].begin());
+        }
     }
 
     vector<mod_int>& operator[](int index) { return values[index]; }
@@ -230,15 +237,6 @@ struct mod_matrix {
 
     bool is_square() const {
         return rows == cols;
-    }
-
-    void make_identity() {
-        assert(is_square());
-
-        for (int i = 0; i < rows; i++) {
-            values[i].assign(cols, 0);
-            values[i][i] = 1;
-        }
     }
 
     mod_matrix operator*(const mod_matrix &other) const {
@@ -289,7 +287,7 @@ struct mod_matrix {
         return product;
     }
 
-    mod_matrix& operator*=(const mod_int &mult) {
+    mod_matrix& operator*=(mod_int mult) {
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)
                 values[i][j] *= mult;
@@ -297,7 +295,7 @@ struct mod_matrix {
         return *this;
     }
 
-    mod_matrix operator*(const mod_int &mult) const {
+    mod_matrix operator*(mod_int mult) const {
         return mod_matrix(*this) *= mult;
     }
 
@@ -315,12 +313,24 @@ struct mod_matrix {
         return mod_matrix(*this) += other;
     }
 
-    mod_matrix power(int64_t p) const {
+    mod_matrix& operator-=(const mod_matrix &other) {
+        assert(rows == other.rows && cols == other.cols);
+
+        for (int i = 0; i < rows; i++)
+            for (int j = 0; j < cols; j++)
+                values[i][j] -= other[i][j];
+
+        return *this;
+    }
+
+    mod_matrix operator-(const mod_matrix &other) const {
+        return mod_matrix(*this) -= other;
+    }
+
+    mod_matrix pow(int64_t p) const {
         assert(p >= 0);
         assert(is_square());
-        mod_matrix m = *this;
-        mod_matrix result(rows);
-        result.make_identity();
+        mod_matrix m = *this, result = IDENTITY(rows);
 
         while (p > 0) {
             if (p & 1)
@@ -335,12 +345,12 @@ struct mod_matrix {
         return result;
     }
 
-    void print() const {
-        cout << rows << ' ' << cols << '\n';
-
+    void print(ostream &os) const {
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)
-                cout << values[i][j] << (j < cols - 1 ? ' ' : '\n');
+                os << values[i][j] << (j < cols - 1 ? ' ' : '\n');
+
+        os << '\n';
     }
 };
 
@@ -362,10 +372,13 @@ int main() {
     mod_matrix m1, m2;
     read_matrix(m1);
     read_matrix(m2);
-    (m1 * m2).print();
+    (m1 + m1).print(cout);
+    (m2 - m2).print(cout);
+    (m1 * m2).print(cout);
 
     read_matrix(m1);
     int64_t p;
     cin >> p;
-    m1.power(p).print();
+    (m1 * mod_int(p)).print(cout);
+    m1.pow(p).print(cout);
 }

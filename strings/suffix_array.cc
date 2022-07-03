@@ -2,6 +2,7 @@
 #include <array>
 #include <cassert>
 #include <iostream>
+#include <numeric>
 #include <vector>
 using namespace std;
 
@@ -65,10 +66,7 @@ struct suffix_array {
         str = _str;
         n = int(str.size());
         suffix.resize(n);
-
-        for (int i = 0; i < n; i++)
-            suffix[i] = i;
-
+        iota(suffix.begin(), suffix.end(), 0);
         bool large_alphabet = false;
 
         for (int i = 0; i < n; i++)
@@ -100,45 +98,47 @@ struct suffix_array {
         for (int i = 1; i < n; i++)
             rank[suffix[i]] = str[suffix[i]] == str[suffix[i - 1]] ? rank[suffix[i - 1]] : i;
 
-        vector<int> next_index(n);
-        vector<int> values(n);
         bool done = false;
 
         for (int len = 1; len < n && !done; len *= 2) {
             // next_index[i] = the next index to use for a suffix of rank i. We insert them in order of the rank of the
             // suffix that comes len characters after the current suffix.
-            for (int i = 0; i < n; i++)
-                next_index[i] = i;
+            vector<int> next_index(n);
+            iota(next_index.begin(), next_index.end(), 0);
 
             // Compute the suffix array for 2 * len. Suffixes of length <= len are prioritized first.
+            vector<int> nsuffix(n);
+
             for (int i = n - len; i < n; i++)
-                values[next_index[rank[i]]++] = i;
+                nsuffix[next_index[rank[i]]++] = i;
 
             for (int i = 0; i < n; i++) {
-                int prev = suffix[i] - len;
+                int before = suffix[i] - len;
 
-                if (prev >= 0)
-                    values[next_index[rank[prev]]++] = prev;
+                if (before >= 0)
+                    nsuffix[next_index[rank[before]]++] = before;
             }
 
-            swap(suffix, values);
+            suffix.swap(nsuffix);
+            nsuffix.clear();
 
             // Compute the rank array for 2 * len.
-            values[suffix[0]] = 0;
+            vector<int> nrank(n);
+            nrank[suffix[0]] = 0;
             done = true;
 
             for (int i = 1; i < n; i++) {
-                int s = suffix[i], prev = suffix[i - 1];
+                int s = suffix[i], before = suffix[i - 1];
 
-                if (s + len < n && prev + len < n && rank[s] == rank[prev] && rank[s + len] == rank[prev + len]) {
-                    values[s] = values[prev];
+                if (max(s, before) + len < n && rank[s] == rank[before] && rank[s + len] == rank[before + len]) {
+                    nrank[s] = nrank[before];
                     done = false;
                 } else {
-                    values[s] = i;
+                    nrank[s] = i;
                 }
             }
 
-            swap(rank, values);
+            rank.swap(nrank);
         }
 
         compute_lcp();

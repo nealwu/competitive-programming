@@ -198,7 +198,7 @@ struct persistent_basic_seg_tree {
     int update(int root, int index, const segment_change &change) {
         assert(root > 0 && 0 <= index && index < tree_n);
 
-        return _update_tree(root, 0, tree_n, index, [&](int position, int length) {
+        return _update_tree(root, 0, tree_n, index, [&](int position, int length) -> void {
             seg(position).apply(length, change);
         });
     }
@@ -206,7 +206,7 @@ struct persistent_basic_seg_tree {
     int update(int root, int index, const segment &new_seg) {
         assert(root > 0 && 0 <= index && index < tree_n);
 
-        return _update_tree(root, 0, tree_n, index, [&](int position, int) {
+        return _update_tree(root, 0, tree_n, index, [&](int position, int) -> void {
             seg(position) = new_seg;
         });
     }
@@ -302,7 +302,7 @@ int main() {
             cin >> a >> x;
             a--;
 
-            int index = tree.find_last_subarray(root, [&](const segment &, const segment &add) {
+            int index = tree.find_last_subarray(root, [&](const segment &, const segment &add) -> bool {
                 return add.maximum < x;
             }, N, a);
 
@@ -313,7 +313,7 @@ int main() {
             cin >> a >> x;
             a--;
 
-            int index = tree.find_last_subarray(root, [&](const segment &current, const segment &add) {
+            int index = tree.find_last_subarray(root, [&](const segment &current, const segment &add) -> bool {
                 return current.sum + add.sum < x;
             }, N, a);
 

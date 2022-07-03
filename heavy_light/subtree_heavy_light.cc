@@ -165,6 +165,8 @@ struct seg_tree {
 
     template<typename T_range_op>
     void process_range(int a, int b, bool needs_join, T_range_op &&range_op) {
+        assert(0 <= a && a <= b && b <= tree_n);
+
         if (a == b) return;
         push_all(a, b);
         int original_a = a, original_b = b;
@@ -186,7 +188,6 @@ struct seg_tree {
     }
 
     segment query(int a, int b) {
-        assert(0 <= a && a <= b && b <= tree_n);
         segment answer;
 
         process_range(a, b, false, [&](int position, int) {
@@ -201,8 +202,6 @@ struct seg_tree {
     }
 
     void update(int a, int b, const segment_change &change) {
-        assert(0 <= a && a <= b && b <= tree_n);
-
         process_range(a, b, true, [&](int position, int length) {
             apply_and_combine(position, length, change);
         });

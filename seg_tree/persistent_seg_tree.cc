@@ -337,7 +337,7 @@ int main() {
             cin >> a >> x;
             a--;
 
-            int index = tree.find_last_subarray(root, [&](const segment &, const segment &add) {
+            int index = tree.find_last_subarray(root, [&](const segment &, const segment &add) -> bool {
                 return add.maximum < x;
             }, N, a);
 
@@ -348,7 +348,7 @@ int main() {
             cin >> a >> x;
             a--;
 
-            int index = tree.find_last_subarray(root, [&](const segment &current, const segment &add) {
+            int index = tree.find_last_subarray(root, [&](const segment &current, const segment &add) -> bool {
                 return current.sum + add.sum < x;
             }, N, a);
 

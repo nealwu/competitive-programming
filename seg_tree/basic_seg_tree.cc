@@ -121,21 +121,29 @@ struct basic_seg_tree {
             tree[position].join(tree[2 * position], tree[2 * position + 1]);
     }
 
-    segment query(int a, int b) const {
+    template<typename T_range_op>
+    void process_range(int a, int b, T_range_op &&range_op) const {
         assert(0 <= a && a <= b && b <= tree_n);
-        segment answer;
         int r_size = 0;
 
         for (a += tree_n, b += tree_n; a < b; a /= 2, b /= 2) {
             if (a & 1)
-                answer.join(tree[a++]);
+                range_op(a++);
 
             if (b & 1)
                 right_half[r_size++] = --b;
         }
 
         for (int i = r_size - 1; i >= 0; i--)
-            answer.join(tree[right_half[i]]);
+            range_op(right_half[i]);
+    }
+
+    segment query(int a, int b) const {
+        segment answer;
+
+        process_range(a, b, [&](int position) -> void {
+            answer.join(tree[position]);
+        });
 
         return answer;
     }
@@ -232,7 +240,7 @@ int main() {
             cin >> a >> x;
             a--;
 
-            int index = tree.find_last_subarray([&](const segment &, const segment &add) {
+            int index = tree.find_last_subarray([&](const segment &, const segment &add) -> bool {
                 return add.maximum < x;
             }, N, a);
 
@@ -243,7 +251,7 @@ int main() {
             cin >> a >> x;
             a--;
 
-            int index = tree.find_last_subarray([&](const segment &current, const segment &add) {
+            int index = tree.find_last_subarray([&](const segment &current, const segment &add) -> bool {
                 return current.sum + add.sum < x;
             }, N, a);
 
