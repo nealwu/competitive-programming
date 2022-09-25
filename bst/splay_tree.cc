@@ -43,7 +43,7 @@ struct splay_node {
     }
 };
 
-auto random_address = [] { char *p = new char; delete p; return uint64_t(p); };
+uint64_t random_address() { char *p = new char; delete p; return uint64_t(p); }
 mt19937_64 splay_rng(chrono::steady_clock::now().time_since_epoch().count() * (random_address() | 1));
 int64_t splay_count = 0;
 

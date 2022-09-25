@@ -153,7 +153,7 @@ struct _m_uint {
 
 template<const unsigned &MOD> _m_uint<MOD> _m_uint<MOD>::save_inv[_m_uint<MOD>::SAVE_INV];
 
-auto random_address = [] { char *p = new char; delete p; return uint64_t(p); };
+uint64_t random_address() { char *p = new char; delete p; return uint64_t(p); }
 mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count() * (random_address() | 1));
 
 // P = 2^32 - 13337 is a safe prime: both P and (P - 1) / 2 are prime.

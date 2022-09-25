@@ -161,7 +161,7 @@ struct block_RMQ {
 template<typename A, typename B> ostream& operator<<(ostream &os, const pair<A, B> &p) { return os << '(' << p.first << ", " << p.second << ')'; }
 template<typename T_container, typename T = typename enable_if<!is_same<T_container, string>::value, typename T_container::value_type>::type> ostream& operator<<(ostream &os, const T_container &v) { os << '{'; string sep; for (const T &x : v) os << sep << x, sep = ", "; return os << '}'; }
 
-auto random_address = [] { char *p = new char; delete p; return uint64_t(p); };
+uint64_t random_address() { char *p = new char; delete p; return uint64_t(p); }
 mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count() * (random_address() | 1));
 
 // Uniformly distributed real number in [a, b).

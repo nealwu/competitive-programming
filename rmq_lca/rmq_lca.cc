@@ -308,7 +308,7 @@ struct LCA {
 #include <chrono>
 #include <random>
 
-auto random_address = [] { char *p = new char; delete p; return uint64_t(p); };
+uint64_t random_address() { char *p = new char; delete p; return uint64_t(p); }
 mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count() * (random_address() | 1));
 
 int main() {

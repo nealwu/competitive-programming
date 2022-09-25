@@ -172,7 +172,7 @@ struct basic_seg_tree {
         join_up(position);
     }
 
-    void update(int index, const segment &seg) {
+    void set(int index, const segment &seg) {
         assert(0 <= index && index < tree_n);
         int position = tree_n + index;
         tree[position] = seg;

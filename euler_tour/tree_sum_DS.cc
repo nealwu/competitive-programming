@@ -577,7 +577,7 @@ void sieve(int maximum) {
         }
 }
 
-auto random_address = [] { char *p = new char; delete p; return uint64_t(p); };
+uint64_t random_address() { char *p = new char; delete p; return uint64_t(p); }
 
 struct safe_hash {
     static unsigned hash32(unsigned x) {

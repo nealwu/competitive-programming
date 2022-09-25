@@ -531,7 +531,7 @@ static void ska_sort(It begin, It end)
 #include <iomanip>
 #include <random>
 
-auto random_address = [] { char *p = new char; delete p; return uint64_t(p); };
+uint64_t random_address() { char *p = new char; delete p; return uint64_t(p); }
 
 const uint64_t SEED = chrono::steady_clock::now().time_since_epoch().count() * (random_address() | 1);
 mt19937_64 rng;
