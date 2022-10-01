@@ -408,6 +408,31 @@ struct splay_tree {
         assert(false);
     }
 
+    void insert_at_index(int index, const splay_key &key) {
+        insert_at_index(index, new_node(key));
+    }
+
+    // Warning: may break the key ordering assumption of the BST.
+    void insert_at_index(int index, splay_node *x) {
+        assert(0 <= index && index <= size());
+        splay_node *right = node_at_index(index);
+
+        if (right != nullptr)
+            splay(right);
+
+        splay_node *left = right == nullptr ? root : right->child[0];
+
+        if (right != nullptr) {
+            right->set_child(0, nullptr);
+            right->join();
+        }
+
+        x->set_child(0, left);
+        x->set_child(1, right);
+        x->join();
+        set_root(x);
+    }
+
     // Returns a splay_node pointer representing all nodes with key less than `key`. If none, returns `nullptr`.
     splay_node *query_prefix_key(const splay_key &key) {
         splay_node *node = lower_bound(key).first;
@@ -485,6 +510,41 @@ struct splay_tree {
     splay_node *query_range_key(const splay_key &lower, const splay_key &upper) {
         return query_range(lower_bound(lower).second, lower_bound(upper).second);
     }
+
+    // should_join(splay_node *node, bool single_node) -> bool
+    // Determines whether we should join with a node (if single_node then just the node, else the subtree).
+    // If true, actually performs the join.
+    template<typename T_bool>
+    int find_last_subarray(T_bool &&should_join, int first = 0) {
+        if (!should_join(nullptr, false))
+            return first - 1;
+
+        splay_node *current = first == 0 ? root : query_suffix_count(size() - first);
+        splay_node *previous = nullptr;
+        int end = first, depth = 0;
+
+        while (current != nullptr) {
+            previous = current;
+            depth++;
+
+            if (!should_join(current->child[0], false)) {
+                current = current->child[0];
+            } else {
+                end += get_size(current->child[0]);
+
+                if (!should_join(current, true))
+                    break;
+
+                end++;
+                current = current->child[1];
+            }
+        }
+
+        if (previous != nullptr)
+            check_splay(previous, depth);
+
+        return end;
+    }
 };
 
 bool splay_tree::_exit_delete_setup = false;
@@ -525,18 +585,40 @@ int main() {
 
     while (cin >> task >> x) {
         if (task == "insert") {
-            cout << tree.insert(x, require_unique).second << '\n';
+            if (require_unique || splay_rng() % 2 == 0) {
+                cout << tree.insert(x, require_unique).second << '\n';
+            } else {
+                int index = tree.lower_bound(x).second;
+                tree.insert_at_index(index, x);
+                cout << index << '\n';
+            }
         } else if (task == "index") {
-            splay_node *node = tree.node_at_index(x);
+            splay_node *index_node = tree.node_at_index(x);
 
-            if (node == nullptr)
+            if (index_node == nullptr)
                 cout << "none" << '\n';
             else
-                cout << node->key << '\n';
+                cout << index_node->key << '\n';
 
-            auto &&normalize_size = [&](int size) {
+            auto normalize_size = [&](int size) {
                 return min(max(size, 0), tree.size());
             };
+
+            int first = int(splay_rng() % (normalize_size(x) + 1));
+            int remain = x - first;
+
+            int current = 0;
+            int prefix = tree.find_last_subarray([&](splay_node *node, bool single_node) -> bool {
+                int size = single_node ? 1 : get_size(node);
+
+                if (current + size <= remain) {
+                    current += size;
+                    return true;
+                }
+
+                return false;
+            }, first);
+            assert(prefix == min(x, tree.size()));
 
             assert(get_size(tree.query_prefix_count(x)) == normalize_size(x));
             assert(get_size(tree.query_suffix_count(x)) == normalize_size(x));

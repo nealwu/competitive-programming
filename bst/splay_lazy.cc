@@ -466,6 +466,41 @@ struct splay_tree {
         node->apply_and_combine(change);
         splay(node);
     }
+
+    // should_join(splay_node *node, bool single_node) -> bool
+    // Determines whether we should join with a node (if single_node then just the node, else the subtree).
+    // If true, actually performs the join.
+    template<typename T_bool>
+    int find_last_subarray(T_bool &&should_join, int first = 0) {
+        if (!should_join(nullptr, false))
+            return first - 1;
+
+        splay_node *current = first == 0 ? root : query_suffix_count(size() - first);
+        splay_node *previous = nullptr;
+        int end = first;
+
+        while (current != nullptr) {
+            current->push();
+            previous = current;
+
+            if (!should_join(current->child[0], false)) {
+                current = current->child[0];
+            } else {
+                end += get_size(current->child[0]);
+
+                if (!should_join(current, true))
+                    break;
+
+                end++;
+                current = current->child[1];
+            }
+        }
+
+        if (previous != nullptr)
+            splay(previous);
+
+        return end;
+    }
 };
 
 bool splay_tree::_exit_delete_setup = false;
@@ -535,6 +570,35 @@ int main() {
             cin >> L >> R;
             assert(0 <= L && L <= R && R <= N);
             cout << get_max(tree.query_range(L, R)) << '\n';
+        } else if (task == "fmax") {
+            int first;
+            int64_t x;
+            cin >> first >> x;
+            first--;
+
+            int index = tree.find_last_subarray([&](splay_node *node, bool single_node) -> bool {
+                return (single_node ? node->value : get_max(node)) < x;
+            }, first);
+
+            cout << (index < N ? index + 1 : -1) << '\n';
+        } else if (task == "fsum") {
+            int first;
+            int64_t x;
+            cin >> first >> x;
+            first--;
+
+            int index = tree.find_last_subarray([&](splay_node *node, bool single_node) -> bool {
+                int64_t sum = single_node ? node->value : get_sum(node);
+
+                if (sum < x) {
+                    x -= sum;
+                    return true;
+                }
+
+                return false;
+            }, first);
+
+            cout << (index < N ? index + 1 : -1) << '\n';
         } else if (task == "reverse") {
             int L, R;
             cin >> L >> R;
