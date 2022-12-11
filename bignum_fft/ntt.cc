@@ -7,6 +7,16 @@
 #include <vector>
 using namespace std;
 
+// http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0200r0.html
+template<class Fun> class y_combinator_result {
+    Fun fun_;
+public:
+    template<class T> explicit y_combinator_result(T &&fun): fun_(std::forward<T>(fun)) {}
+    template<class ...Args> decltype(auto) operator()(Args &&...args) { return fun_(std::ref(*this), std::forward<Args>(args)...); }
+};
+template<class Fun> decltype(auto) y_combinator(Fun &&fun) { return y_combinator_result<std::decay_t<Fun>>(std::forward<Fun>(fun)); }
+
+
 template<const int &MOD>
 struct _m_int {
     int val;
@@ -351,24 +361,18 @@ struct NTT {
     // Multiplies many polynomials whose total degree is n in O(n log n log(polynomials.size())).
     template<typename T>
     vector<T> mod_multiply_all(const vector<vector<T>> &polynomials) {
-        if (polynomials.empty())
-            return {1};
+        return y_combinator([&](auto self, int start, int end) -> vector<T> {
+            if (start >= end)
+                return {1};
 
-        struct compare_size {
-            bool operator()(const vector<T> &x, const vector<T> &y) {
-                return x.size() > y.size();
-            }
-        };
+            if (end - start == 1)
+                return polynomials[start];
 
-        priority_queue<vector<T>, vector<vector<T>>, compare_size> pq(polynomials.begin(), polynomials.end());
-
-        while (pq.size() > 1) {
-            vector<T> a = pq.top(); pq.pop();
-            vector<T> b = pq.top(); pq.pop();
-            pq.push(mod_multiply(a, b));
-        }
-
-        return pq.top();
+            int mid = (start + end) / 2;
+            vector<T> left = self(start, mid);
+            vector<T> right = self(mid, end);
+            return mod_multiply(left, right);
+        })(0, int(polynomials.size()));
     }
 };
 
