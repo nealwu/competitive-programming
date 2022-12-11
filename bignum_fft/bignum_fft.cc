@@ -391,7 +391,7 @@ namespace FFT {
 
         for (int i = 0; i < n; i++) {
             left_fft[i].real(int(left[i]) % SPLIT_BASE);
-            left_fft[i].imag(int(left[i]) / SPLIT_BASE);
+            left_fft[i].imag(int(int(left[i]) / SPLIT_BASE));
         }
 
         fft_iterative(N, left_fft);
@@ -401,7 +401,7 @@ namespace FFT {
         } else {
             for (int i = 0; i < m; i++) {
                 right_fft[i].real(int(right[i]) % SPLIT_BASE);
-                right_fft[i].imag(int(right[i]) / SPLIT_BASE);
+                right_fft[i].imag(int(int(right[i]) / SPLIT_BASE));
             }
 
             fft_iterative(N, right_fft);
