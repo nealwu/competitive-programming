@@ -267,6 +267,32 @@ struct persistent_basic_seg_tree {
             return x < mid ? x : search(right(position), mid, end);
         })(root, 0, tree_n);
     }
+
+    template<typename T_bool>
+    int find_last_subarray_two_roots(int root0, int root1, T_bool &&should_join, int n, int first = 0) const {
+        assert(root0 > 0 && root1 > 0 && 0 <= first && first <= n);
+        segment current0, current1;
+
+        // Check the degenerate case.
+        if (!should_join(current0, current0, current1, current1))
+            return first - 1;
+
+        return y_combinator([&](auto search, int position0, int position1, int start, int end) -> int {
+            if (end <= first) {
+                return end;
+            } else if (first <= start && end <= n && should_join(current0, seg(position0), current1, seg(position1))) {
+                current0.join(seg(position0));
+                current1.join(seg(position1));
+                return end;
+            } else if (end - start == 1) {
+                return start;
+            }
+
+            int mid = (start + end) / 2;
+            int x = search(left(position0), left(position1), start, mid);
+            return x < mid ? x : search(right(position0), right(position1), mid, end);
+        })(root0, root1, 0, tree_n);
+    }
 };
 
 
