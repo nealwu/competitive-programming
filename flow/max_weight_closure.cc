@@ -182,7 +182,7 @@ struct dinic {
 // max_weight_closure solves the following problem:
 // There are n projects you can complete. The i-th project gives you a gain (or loss if negative) of P_i money.
 // Projects can have dependencies on other projects; you can do a project as long as you also do all its dependencies.
-// Cyclic dependencies are allowed; if a group of projects is strongly connected, you have to do all of or none of them.
+// Cyclic dependencies are allowed; if a group of projects is strongly connected, you have to do all or none of them.
 // See https://en.wikipedia.org/wiki/Closure_problem. "Project A depends on project B" means an A -> B edge.
 // Warning: cost_t must be able to handle the sum of costs, not just individual amounts.
 template<typename cost_t>
@@ -268,7 +268,7 @@ template<typename T_container, typename T = typename enable_if<!is_same<T_contai
 void dbg_out() { cerr << endl; }
 template<typename Head, typename... Tail> void dbg_out(Head H, Tail... T) { cerr << ' ' << H; dbg_out(T...); }
 #ifdef NEAL_DEBUG
-#define dbg(...) cerr << "(" << #__VA_ARGS__ << "):", dbg_out(__VA_ARGS__)
+#define dbg(...) cerr << '[' << __FILE__ << ':' << __LINE__ << "] (" << #__VA_ARGS__ << "):", dbg_out(__VA_ARGS__)
 #else
 #define dbg(...)
 #endif
