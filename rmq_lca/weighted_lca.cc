@@ -258,13 +258,11 @@ struct weighted_LCA {
 
     // Returns the child of `a` that is an ancestor of `b`. Assumes `a` is a strict ancestor of `b`.
     int child_ancestor(int a, int b) const {
-        assert(a != b);
-        assert(is_ancestor(a, b));
+        assert(a != b && is_ancestor(a, b));
 
         // Note: this depends on RMQ breaking ties by latest index.
         int child = euler[rmq.query_index(first_occurrence[a], first_occurrence[b] + 1) + 1];
-        assert(parent[child] == a);
-        assert(is_ancestor(child, b));
+        // assert(parent[child] == a && is_ancestor(child, b));
         return child;
     }
 
@@ -289,7 +287,9 @@ struct weighted_LCA {
         int anc = get_lca(a, b);
         int first_half = depth[a] - depth[anc];
         int second_half = depth[b] - depth[anc];
-        assert(0 <= k && k <= first_half + second_half);
+
+        if (k < 0 || k > first_half + second_half)
+            return -1;
 
         if (k < first_half)
             return get_kth_ancestor(a, k);
