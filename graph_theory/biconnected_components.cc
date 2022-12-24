@@ -177,7 +177,7 @@ struct block_cut_tree {
                 dfs(root, -1);
     }
 
-    bool same_biconnected_component(int a, int b) {
+    bool same_biconnected_component(int a, int b) const {
         if (depth[a] > depth[b])
             swap(a, b);
 

@@ -153,7 +153,7 @@ struct _m_int {
 
 template<const int &MOD> _m_int<MOD> _m_int<MOD>::save_inv[_m_int<MOD>::SAVE_INV];
 
-extern const int MOD = 998244353;
+const int MOD = 998244353;
 using mod_int = _m_int<MOD>;
 
 

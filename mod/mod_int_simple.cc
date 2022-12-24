@@ -129,6 +129,6 @@ struct _m_int {
     }
 };
 
-extern const int MOD = 998244353;
-extern const int MOD = int(1e9) + 7;
+const int MOD = 998244353;
+const int MOD = int(1e9) + 7;
 using mod_int = _m_int<MOD>;

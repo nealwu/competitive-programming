@@ -5,6 +5,7 @@
 #include <vector>
 using namespace std;
 
+// Warning: this uses 195 MB for N = 500,000. If low on memory use the RMQ from memory_rmq_lca.cc or block_rmq_lca.cc
 template<typename T, bool maximum_mode = false>
 struct RMQ {
     static int highest_bit(unsigned x) {
@@ -70,9 +71,10 @@ struct weighted_LCA {
     vector<int> parent, depth, subtree_size;
     vector<T_weight> weighted_depth, up_weight;
     vector<int> euler, first_occurrence;
-    vector<int> tour_start, tour_end, postorder;
+    vector<int> tour_start, tour_end;
     vector<int> tour_list, rev_tour_list;
     vector<int> heavy_root;
+    vector<int> root_depth, root_parent;  // These two vectors serve purely to optimize get_kth_ancestor
     RMQ<int> rmq;
     bool built;
 
@@ -96,7 +98,6 @@ struct weighted_LCA {
         first_occurrence.resize(n);
         tour_start.resize(n);
         tour_end.resize(n);
-        postorder.resize(n);
         tour_list.resize(n);
         heavy_root.resize(n);
         built = false;
@@ -147,7 +148,7 @@ struct weighted_LCA {
         });
     }
 
-    int tour, post_tour;
+    int tour;
 
     void tour_dfs(int node, bool heavy) {
         heavy_root[node] = heavy ? heavy_root[parent[node]] : node;
@@ -164,7 +165,6 @@ struct weighted_LCA {
         }
 
         tour_end[node] = tour;
-        postorder[node] = post_tour++;
     }
 
     void build(int root = -1, bool build_rmq = true) {
@@ -177,7 +177,7 @@ struct weighted_LCA {
             if (i != root && parent[i] < 0)
                 dfs(i, -1, 0);
 
-        tour = post_tour = 0;
+        tour = 0;
         euler.clear();
         euler.reserve(2 * n);
 
@@ -188,18 +188,27 @@ struct weighted_LCA {
                 euler.push_back(-1);
             }
 
-        rev_tour_list = tour_list;
-        reverse(rev_tour_list.begin(), rev_tour_list.end());
         assert(int(euler.size()) == 2 * n);
-        vector<int> euler_depths;
-        euler_depths.reserve(euler.size());
+        vector<int> euler_depth;
+        euler_depth.reserve(euler.size());
 
         for (int node : euler)
-            euler_depths.push_back(node < 0 ? node : depth[node]);
+            euler_depth.push_back(node < 0 ? node : depth[node]);
 
         if (build_rmq)
-            rmq.build(euler_depths);
+            rmq.build(euler_depth);
 
+        euler_depth.clear();
+        root_depth.resize(n);
+        root_parent.resize(n);
+
+        for (int i = 0; i < n; i++) {
+            root_depth[i] = depth[heavy_root[i]];
+            root_parent[i] = parent[heavy_root[i]];
+        }
+
+        rev_tour_list = tour_list;
+        reverse(rev_tour_list.begin(), rev_tour_list.end());
         built = true;
     }
 
@@ -270,14 +279,15 @@ struct weighted_LCA {
         if (k > depth[a])
             return -1;
 
+        int goal = depth[a] - k;
+
         while (a >= 0) {
-            int root = heavy_root[a];
+            if (root_depth[a] <= goal) {
+                int root = heavy_root[a];
+                return tour_list[tour_start[root] + goal - depth[root]];
+            }
 
-            if (depth[root] <= depth[a] - k)
-                return tour_list[tour_start[a] - k];
-
-            k -= depth[a] - depth[root] + 1;
-            a = parent[root];
+            a = root_parent[a];
         }
 
         return a;

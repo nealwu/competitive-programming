@@ -157,7 +157,7 @@ uint64_t random_address() { char *p = new char; delete p; return uint64_t(p); }
 mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count() * (random_address() | 1));
 
 // P = 2^32 - 13337 is a safe prime: both P and (P - 1) / 2 are prime.
-extern const unsigned HASH_P = unsigned(-13337);
+const unsigned HASH_P = unsigned(-13337);
 using hash_int = _m_uint<HASH_P>;
 
 const uint64_t HASH_P2 = uint64_t(HASH_P) * HASH_P;

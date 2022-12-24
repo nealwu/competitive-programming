@@ -97,5 +97,6 @@ struct grid_bfs {
 
 
 int main() {
-
+    grid_bfs<string> bfs;
+    bfs.bfs({});
 }

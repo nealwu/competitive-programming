@@ -165,7 +165,7 @@ struct _m_int {
 
 template<const int &MOD> _m_int<MOD> _m_int<MOD>::save_inv[_m_int<MOD>::SAVE_INV];
 
-extern const int MOD = 998244353;
+const int MOD = 998244353;
 using mod_int = _m_int<MOD>;
 
 
@@ -434,8 +434,8 @@ namespace multi_ntt {
         return int(mod_result);
     }
 
-    extern const int MOD2 = 1711276033;
-    extern const int MOD3 = 2113929217;
+    const int MOD2 = 1711276033;
+    const int MOD3 = 2113929217;
     const array<int64_t, 2> INV = prepare_triple_crt({MOD, MOD2, MOD3});
     const int64_t INV23 = inv_mod(MOD2, MOD3);
 
