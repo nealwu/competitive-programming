@@ -281,14 +281,10 @@ struct weighted_LCA {
 
         int goal = depth[a] - k;
 
-        while (a >= 0) {
-            if (heavy_root_depth[a] <= goal)
-                return tour_list[tour_start[a] + goal - depth[a]];
-
+        while (heavy_root_depth[a] > goal)
             a = heavy_root_parent[a];
-        }
 
-        return a;
+        return tour_list[tour_start[a] + goal - depth[a]];
     }
 
     int get_kth_node_on_path(int a, int b, int k) const {
