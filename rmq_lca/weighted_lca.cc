@@ -212,7 +212,32 @@ struct weighted_LCA {
         built = true;
     }
 
-    pair<T_weight, array<int, 2>> get_diameter() const {
+    pair<int, array<int, 2>> get_diameter() const {
+        assert(built);
+
+        // We find the maximum of depth[u] - 2 * depth[x] + depth[v] where u, x, v occur in order in the Euler tour.
+        pair<int, int> u_max = {-1, -1};
+        pair<int, int> ux_max = {-1, -1};
+        pair<int, array<int, 2>> uxv_max = {-1, {-1, -1}};
+
+        for (int node : euler) {
+            if (node < 0) break;
+            u_max = max(u_max, {depth[node], node});
+            ux_max = max(ux_max, {u_max.first - 2 * depth[node], u_max.second});
+            uxv_max = max(uxv_max, {ux_max.first + depth[node], {ux_max.second, node}});
+        }
+
+        return uxv_max;
+    }
+
+    // Returns the center(s) of the tree (the midpoint(s) of the diameter).
+    array<int, 2> get_center() const {
+        pair<int, array<int, 2>> diam = get_diameter();
+        int length = diam.first, a = diam.second[0], b = diam.second[1];
+        return {get_kth_node_on_path(a, b, length / 2), get_kth_node_on_path(a, b, (length + 1) / 2)};
+    }
+
+    pair<T_weight, array<int, 2>> get_weighted_diameter() const {
         assert(built);
 
         // We find the maximum of weighted_depth[u] - 2 * weighted_depth[x] + weighted_depth[v]
@@ -229,13 +254,6 @@ struct weighted_LCA {
         }
 
         return uxv_max;
-    }
-
-    // Returns the center(s) of the tree (the midpoint(s) of the diameter).
-    array<int, 2> get_center() const {
-        pair<int, array<int, 2>> diam = get_diameter();
-        int length = diam.first, a = diam.second[0], b = diam.second[1];
-        return {get_kth_node_on_path(a, b, length / 2), get_kth_node_on_path(a, b, (length + 1) / 2)};
     }
 
     // Note: returns -1 if `a` and `b` aren't connected.
@@ -352,7 +370,7 @@ int main() {
     }
 
     lca.build();
-    auto diameter = lca.get_diameter();
+    auto diameter = lca.get_weighted_diameter();
     printf("%lld\n", (long long) diameter.first);
     assert(diameter.first == lca.get_weighted_dist(diameter.second[0], diameter.second[1]));
 
