@@ -157,71 +157,78 @@ const int MOD = 998244353;
 using mod_int = _m_int<MOD>;
 
 
-vector<mod_int> _factorial = {1}, _inv_factorial = {1};
+template<const int &MOD>
+struct combinatorics {
+    using combo_int = _m_int<MOD>;
 
-void prepare_factorials(int64_t maximum) {
-    static int64_t prepared_maximum = 0;
+    vector<combo_int> _factorial = {1}, _inv_factorial = {1};
 
-    if (maximum <= prepared_maximum)
-        return;
+    void prepare_factorials(int64_t maximum) {
+        static int64_t prepared_maximum = 0;
 
-    // Prevent increasing maximum by only 1 each time.
-    maximum += maximum / 100;
-    _factorial.resize(maximum + 1);
-    _inv_factorial.resize(maximum + 1);
+        if (maximum <= prepared_maximum)
+            return;
 
-    for (int64_t i = prepared_maximum + 1; i <= maximum; i++)
-        _factorial[i] = i * _factorial[i - 1];
+        // Prevent increasing maximum by only 1 each time.
+        maximum += maximum / 100;
+        _factorial.resize(maximum + 1);
+        _inv_factorial.resize(maximum + 1);
 
-    _inv_factorial[maximum] = _factorial[maximum].inv();
+        for (int64_t i = prepared_maximum + 1; i <= maximum; i++)
+            _factorial[i] = i * _factorial[i - 1];
 
-    for (int64_t i = maximum - 1; i > prepared_maximum; i--)
-        _inv_factorial[i] = (i + 1) * _inv_factorial[i + 1];
+        _inv_factorial[maximum] = _factorial[maximum].inv();
 
-    prepared_maximum = maximum;
-}
+        for (int64_t i = maximum - 1; i > prepared_maximum; i--)
+            _inv_factorial[i] = (i + 1) * _inv_factorial[i + 1];
 
-mod_int factorial(int64_t n) {
-    if (n < 0) return 0;
-    prepare_factorials(n);
-    return _factorial[n];
-}
+        prepared_maximum = maximum;
+    }
 
-mod_int inv_factorial(int64_t n) {
-    if (n < 0) return 0;
-    prepare_factorials(n);
-    return _inv_factorial[n];
-}
+    combo_int factorial(int64_t n) {
+        if (n < 0) return 0;
+        prepare_factorials(n);
+        return _factorial[n];
+    }
 
-mod_int choose(int64_t n, int64_t r) {
-    if (r < 0 || r > n) return 0;
-    prepare_factorials(n);
-    return _factorial[n] * _inv_factorial[r] * _inv_factorial[n - r];
-}
+    combo_int inv_factorial(int64_t n) {
+        if (n < 0) return 0;
+        prepare_factorials(n);
+        return _inv_factorial[n];
+    }
 
-mod_int permute(int64_t n, int64_t r) {
-    if (r < 0 || r > n) return 0;
-    prepare_factorials(n);
-    return _factorial[n] * _inv_factorial[n - r];
-}
+    combo_int choose(int64_t n, int64_t r) {
+        if (r < 0 || r > n) return 0;
+        prepare_factorials(n);
+        return _factorial[n] * _inv_factorial[r] * _inv_factorial[n - r];
+    }
 
-mod_int inv_choose(int64_t n, int64_t r) {
-    assert(0 <= r && r <= n);
-    prepare_factorials(n);
-    return _inv_factorial[n] * _factorial[r] * _factorial[n - r];
-}
+    combo_int permute(int64_t n, int64_t r) {
+        if (r < 0 || r > n) return 0;
+        prepare_factorials(n);
+        return _factorial[n] * _inv_factorial[n - r];
+    }
 
-mod_int inv_permute(int64_t n, int64_t r) {
-    assert(0 <= r && r <= n);
-    prepare_factorials(n);
-    return _inv_factorial[n] * _factorial[n - r];
-}
+    combo_int inv_choose(int64_t n, int64_t r) {
+        assert(0 <= r && r <= n);
+        prepare_factorials(n);
+        return _inv_factorial[n] * _factorial[r] * _factorial[n - r];
+    }
+
+    combo_int inv_permute(int64_t n, int64_t r) {
+        assert(0 <= r && r <= n);
+        prepare_factorials(n);
+        return _inv_factorial[n] * _factorial[n - r];
+    }
+};
+
+combinatorics<MOD> combo;
 
 
 int main() {
     int N;
     cin >> N;
-    // prepare_factorials(N);
+    // combo.prepare_factorials(N);
 
     int want_hash;
     cin >> want_hash;
@@ -237,27 +244,27 @@ int main() {
         for (int n = 0; n <= N; n++)
             if (S[n] == '0') {
                 for (int r = 0; r <= n; r++) {
-                    hash = MULT * hash + int(choose(n, r));
-                    hash = MULT * hash + int(permute(n, r));
+                    hash = MULT * hash + int(combo.choose(n, r));
+                    hash = MULT * hash + int(combo.permute(n, r));
                 }
             } else {
                 for (int r = n; r >= 0; r--) {
-                    hash = MULT * hash + int(choose(n, r));
-                    hash = MULT * hash + int(permute(n, r));
+                    hash = MULT * hash + int(combo.choose(n, r));
+                    hash = MULT * hash + int(combo.permute(n, r));
                 }
             }
 
         cout << hash << '\n';
 
         for (int r = 0; r <= N; r++) {
-            assert(choose(N, r) * inv_choose(N, r) == 1);
-            assert(permute(N, r) * inv_permute(N, r) == 1);
+            assert(combo.choose(N, r) * combo.inv_choose(N, r) == 1);
+            assert(combo.permute(N, r) * combo.inv_permute(N, r) == 1);
         }
     }
 
     for (int n = 0; n <= N; n++)
-        cout << choose(n, n / 2) << (n < N ? ' ' : '\n');
+        cout << combo.choose(n, n / 2) << (n < N ? ' ' : '\n');
 
     for (int r = 0; r <= N; r++)
-        cout << choose(N, r) << (r < N ? ' ' : '\n');
+        cout << combo.choose(N, r) << (r < N ? ' ' : '\n');
 }
