@@ -143,14 +143,15 @@ struct LCA {
         tour_end[node] = tour;
     }
 
-    void build(int root = -1, bool build_rmq = true) {
-        parent.assign(n, -1);
+    void build(vector<int> roots = {}, bool build_rmq = true) {
+        depth.assign(n, -1);
 
-        if (0 <= root && root < n)
-            dfs(root, -1);
+        for (int root : roots)
+            if (depth[root] < 0)
+                dfs(root, -1);
 
         for (int i = 0; i < n; i++)
-            if (i != root && parent[i] < 0)
+            if (depth[i] < 0)
                 dfs(i, -1);
 
         tour = 0;

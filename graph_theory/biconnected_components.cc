@@ -170,10 +170,10 @@ struct block_cut_tree {
                 add_edge(x, n + bc);
 
         parent.assign(T, -1);
-        depth.resize(T);
+        depth.assign(T, -1);
 
         for (int root = 0; root < T; root++)
-            if (parent[root] < 0)
+            if (depth[root] < 0)
                 dfs(root, -1);
     }
 
