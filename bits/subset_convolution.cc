@@ -30,7 +30,8 @@ template<typename Head, typename... Tail> void dbg_out(Head H, Tail... T) { cerr
 
 // For every mask, computes the sum of `values[sub]` where `sub` is a submask of mask.
 template<typename T_out, typename T_in>
-vector<T_out> submask_sums(int n, const vector<T_in> &values) {
+vector<T_out> submask_sums(const vector<T_in> &values) {
+    int n = __builtin_ctz(int(values.size()));
     assert(int(values.size()) == 1 << n);
     vector<T_out> dp(values.begin(), values.end());
 
@@ -46,7 +47,8 @@ vector<T_out> submask_sums(int n, const vector<T_in> &values) {
 
 // Does the inverse of `submask_sums`; returns the input that produces the given output.
 template<typename T_out, typename T_in>
-vector<T_out> mobius_transform(int n, const vector<T_in> &values) {
+vector<T_out> mobius_transform(const vector<T_in> &values) {
+    int n = __builtin_ctz(int(values.size()));
     assert(int(values.size()) == 1 << n);
     vector<T_out> dp(values.begin(), values.end());
 
@@ -77,7 +79,8 @@ void iterate_bitmasks_with_popcount(int n, int k, F &&f) {
 
 // Performs subset convolution, C[x | y] += A[x] * B[y] for all (x & y) = 0, in n^2 * 2^n time.
 template<typename T_out, typename T_in>
-vector<T_out> subset_convolution(int n, const vector<T_in> &A, const vector<T_in> &B) {
+vector<T_out> subset_convolution(const vector<T_in> &A, const vector<T_in> &B) {
+    int n = __builtin_ctz(int(A.size()));
     assert(int(A.size()) == 1 << n && int(B.size()) == 1 << n);
     vector<vector<T_out>> FA(n + 1, vector<T_out>(1 << n, 0));
     vector<vector<T_out>> FB(n + 1, vector<T_out>(1 << n, 0));
@@ -88,8 +91,8 @@ vector<T_out> subset_convolution(int n, const vector<T_in> &A, const vector<T_in
     }
 
     for (int c = 0; c < n; c++) {
-        FA[c] = submask_sums<T_out>(n, FA[c]);
-        FB[c] = submask_sums<T_out>(n, FB[c]);
+        FA[c] = submask_sums<T_out>(FA[c]);
+        FB[c] = submask_sums<T_out>(FB[c]);
     }
 
     vector<T_out> C(1 << n, 0);
@@ -104,7 +107,7 @@ vector<T_out> subset_convolution(int n, const vector<T_in> &A, const vector<T_in
 
         // Subtract out combinations that actually have fewer than c bits.
         if (c > 1)
-            FC = mobius_transform<T_out>(n, FC);
+            FC = mobius_transform<T_out>(FC);
 
         iterate_bitmasks_with_popcount(n, c, [&](int mask) {
             C[mask] = FC[mask];
@@ -116,9 +119,9 @@ vector<T_out> subset_convolution(int n, const vector<T_in> &A, const vector<T_in
 
 // Performs reverse subset convolution, C[x] += A[x | y] * B[y] for all (x & y) = 0, in n^2 * 2^n time.
 template<typename T_out, typename T_in>
-vector<T_out> reverse_subset_convolution(int n, vector<T_in> A, const vector<T_in> &B) {
+vector<T_out> reverse_subset_convolution(vector<T_in> A, const vector<T_in> &B) {
     reverse(A.begin(), A.end());
-    vector<T_out> result = subset_convolution<T_out>(n, A, B);
+    vector<T_out> result = subset_convolution<T_out>(A, B);
     reverse(result.begin(), result.end());
     return result;
 }
@@ -149,6 +152,6 @@ int main() {
     for (auto &b : B)
         cin >> b;
 
-    output_vector(subset_convolution<int64_t>(N, A, B));
-    output_vector(reverse_subset_convolution<int64_t>(N, A, B));
+    output_vector(subset_convolution<int64_t>(A, B));
+    output_vector(reverse_subset_convolution<int64_t>(A, B));
 }

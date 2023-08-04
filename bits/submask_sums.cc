@@ -6,7 +6,8 @@ using namespace std;
 
 // For every mask, computes the sum of `values[sub]` where `sub` is a submask of mask.
 template<typename T_out, typename T_in>
-vector<T_out> submask_sums(int n, const vector<T_in> &values) {
+vector<T_out> submask_sums(const vector<T_in> &values) {
+    int n = __builtin_ctz(int(values.size()));
     assert(int(values.size()) == 1 << n);
     vector<T_out> dp(values.begin(), values.end());
 
@@ -22,16 +23,18 @@ vector<T_out> submask_sums(int n, const vector<T_in> &values) {
 
 // For every mask, computes the sum of `values[sup]` where mask is a submask of `sup`.
 template<typename T_out, typename T_in>
-vector<T_out> supermask_sums(int n, vector<T_in> values) {
+vector<T_out> supermask_sums(vector<T_in> values) {
     reverse(values.begin(), values.end());
-    vector<T_out> result = submask_sums<T_out>(n, values);
+    vector<T_out> result = submask_sums<T_out>(values);
     reverse(result.begin(), result.end());
     return result;
 }
 
 // Does the inverse of `submask_sums`; returns the input that produces the given output.
+// Note that this also computes bitmask inclusion-exclusion.
 template<typename T_out, typename T_in>
-vector<T_out> mobius_transform(int n, const vector<T_in> &values) {
+vector<T_out> mobius_transform(const vector<T_in> &values) {
+    int n = __builtin_ctz(int(values.size()));
     assert(int(values.size()) == 1 << n);
     vector<T_out> dp(values.begin(), values.end());
 
@@ -45,9 +48,9 @@ vector<T_out> mobius_transform(int n, const vector<T_in> &values) {
 
 // Does the inverse of `supermask_sums`; returns the input that produces the given output.
 template<typename T_out, typename T_in>
-vector<T_out> super_mobius_transform(int n, vector<T_in> values) {
+vector<T_out> super_mobius_transform(vector<T_in> values) {
     reverse(values.begin(), values.end());
-    vector<T_out> result = mobius_transform<T_out>(n, values);
+    vector<T_out> result = mobius_transform<T_out>(values);
     reverse(result.begin(), result.end());
     return result;
 }
@@ -66,19 +69,19 @@ int main() {
         cin >> a;
 
     long double begin = clock();
-    vector<int64_t> sums = submask_sums<int64_t>(N, A);
+    vector<int64_t> sums = submask_sums<int64_t>(A);
     cerr << "submask_sums: " << (clock() - begin) / CLOCKS_PER_SEC << 's' << endl;
 
     for (int i = 0; i < 1 << N; i++)
         cout << sums[i] << (i < (1 << N) - 1 ? ' ' : '\n');
 
-    vector<int64_t> super_sums = supermask_sums<int64_t>(N, A);
+    vector<int64_t> super_sums = supermask_sums<int64_t>(A);
 
     for (int i = 0; i < 1 << N; i++)
         cout << super_sums[i] << (i < (1 << N) - 1 ? ' ' : '\n');
 
-    vector<int64_t> A64 = mobius_transform<int64_t>(N, sums);
+    vector<int64_t> A64 = mobius_transform<int64_t>(sums);
     assert(vector<int64_t>(A.begin(), A.end()) == A64);
-    A64 = super_mobius_transform<int64_t>(N, super_sums);
+    A64 = super_mobius_transform<int64_t>(super_sums);
     assert(vector<int64_t>(A.begin(), A.end()) == A64);
 }

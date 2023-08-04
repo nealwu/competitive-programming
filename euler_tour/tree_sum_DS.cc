@@ -586,8 +586,10 @@ uint64_t random_address() { char *p = new char; delete p; return uint64_t(p); }
 
 struct safe_hash {
     static unsigned hash32(unsigned x) {
-        x = (x ^ (x >> 16)) * 0x45d9f3b;
-        x = (x ^ (x >> 16)) * 0x45d9f3b;
+        // https://groups.google.com/g/prng/c/VFjdFmbMgZI
+        x += 0x9e3779b9;
+        x = (x ^ (x >> 16)) * 0x85ebca6b;
+        x = (x ^ (x >> 13)) * 0xc2b2ae35;
         return x ^ (x >> 16);
     }
 
