@@ -5,7 +5,7 @@
 #include <vector>
 using namespace std;
 
-struct identity {
+struct identity_extract {
     template<typename T>
     T operator()(const T &x) const {
         return x;
@@ -13,8 +13,8 @@ struct identity {
 };
 
 // A stable sort that sorts in passes of `bits_per_pass` bits at a time.
-template<typename T, typename T_extract_key = identity>
-void radix_sort(vector<T> &data, int bits_per_pass = 10, const T_extract_key &extract_key = identity()) {
+template<typename T, typename T_extract_key = identity_extract>
+void radix_sort(vector<T> &data, int bits_per_pass = 10, const T_extract_key &extract_key = identity_extract()) {
     if (int64_t(data.size()) * (64 - __builtin_clzll(data.size())) < 2 * (1 << bits_per_pass)) {
         stable_sort(data.begin(), data.end(), [&](const T &a, const T &b) {
             return extract_key(a) < extract_key(b);

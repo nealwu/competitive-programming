@@ -26,7 +26,7 @@ namespace FFT {
     struct complex {
         float_t x, y;
 
-        complex<float_t>(float_t _x = 0, float_t _y = 0) : x(_x), y(_y) {}
+        complex(float_t _x = 0, float_t _y = 0) : x(_x), y(_y) {}
 
         float_t real() const { return x; }
         float_t imag() const { return y; }
@@ -34,25 +34,25 @@ namespace FFT {
         void real(float_t _x) { x = _x; }
         void imag(float_t _y) { y = _y; }
 
-        complex<float_t>& operator+=(const complex<float_t> &other) { x += other.x; y += other.y; return *this; }
-        complex<float_t>& operator-=(const complex<float_t> &other) { x -= other.x; y -= other.y; return *this; }
+        complex& operator+=(const complex &other) { x += other.x; y += other.y; return *this; }
+        complex& operator-=(const complex &other) { x -= other.x; y -= other.y; return *this; }
 
-        complex<float_t> operator+(const complex<float_t> &other) const { return complex<float_t>(*this) += other; }
-        complex<float_t> operator-(const complex<float_t> &other) const { return complex<float_t>(*this) -= other; }
+        complex operator+(const complex &other) const { return complex(*this) += other; }
+        complex operator-(const complex &other) const { return complex(*this) -= other; }
 
-        complex<float_t> operator*(const complex<float_t> &other) const {
+        complex operator*(const complex &other) const {
             return {x * other.x - y * other.y, x * other.y + other.x * y};
         }
 
-        complex<float_t> operator*(float_t mult) const {
+        complex operator*(float_t mult) const {
             return {x * mult, y * mult};
         }
 
-        friend complex<float_t> conj(const complex<float_t> &c) {
+        friend complex conj(const complex &c) {
             return {c.x, -c.y};
         }
 
-        friend ostream& operator<<(ostream &os, const complex<float_t> &c) {
+        friend ostream& operator<<(ostream &os, const complex &c) {
             return os << '(' << c.x << ", " << c.y << ')';
         }
     };
