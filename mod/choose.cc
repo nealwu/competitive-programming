@@ -169,8 +169,8 @@ struct combinatorics {
         if (maximum <= prepared_maximum)
             return;
 
-        // Prevent increasing maximum by only 1 each time.
-        maximum += maximum / 100;
+        // Prevent increasing prepared_maximum by only 1 each time.
+        maximum = max(maximum, int64_t(1.01L * prepared_maximum));
         _factorial.resize(maximum + 1);
         _inv_factorial.resize(maximum + 1);
 
