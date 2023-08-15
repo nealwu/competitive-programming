@@ -24,7 +24,7 @@ struct persistent_array {
     }
 
     void init(int n, int max_updates = 0) {
-        init(vector<T>(n, 0), max_updates);
+        init(vector<T>(n, T()), max_updates);
     }
 
     // Directly assigning `tree[position] = f(...)` results in segmentation faults, because the address for

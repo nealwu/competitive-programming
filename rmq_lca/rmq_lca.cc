@@ -65,7 +65,7 @@ struct LCA {
     vector<int> heavy_root;
     vector<int> heavy_root_depth, heavy_root_parent;  // These two vectors serve purely to optimize get_kth_ancestor
     RMQ<int> rmq;
-    bool built;
+    bool built = false;
 
     LCA(int _n = 0) {
         init(_n);

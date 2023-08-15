@@ -70,7 +70,7 @@ struct LCA {
     vector<int> heavy_root;
     vector<int> heavy_root_depth, heavy_root_parent;  // These two vectors serve purely to optimize get_kth_ancestor
     RMQ<int> rmq;
-    bool built;
+    bool built = false;
 
     LCA(int _n = 0) {
         init(_n);
@@ -476,7 +476,7 @@ struct tree_sum_DS {
     static const bool BUILD_SUBTREES = false;
 
     const LCA &lca;
-    bool vertex_mode;
+    bool vertex_mode = false;
     vector<T> values;
     range_add_point_query_tree<T> path_tree;
     fenwick_tree<T> tour_tree;

@@ -266,7 +266,7 @@ struct seg_tree {
 
 struct subtree_heavy_light {
     int n = 0;
-    bool vertex_mode;
+    bool vertex_mode = false;
 
     vector<vector<int>> adj;
     vector<int> parent, depth, subtree_size;
@@ -410,7 +410,7 @@ int main() {
 #endif
 
     int N, Q;
-    bool vertex_mode;
+    bool vertex_mode = false;
     cin >> N >> Q >> vertex_mode;
     subtree_heavy_light HLD(N, vertex_mode);
     vector<pair<int, int>> edges;
