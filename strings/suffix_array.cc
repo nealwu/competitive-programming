@@ -7,7 +7,7 @@
 using namespace std;
 
 template<typename T, bool maximum_mode = false>
-struct RMQ {
+struct RMQ_value {
     static int highest_bit(unsigned x) {
         return x == 0 ? -1 : 31 - __builtin_clz(x);
     }
@@ -15,7 +15,7 @@ struct RMQ {
     int n = 0;
     vector<vector<T>> range_min;
 
-    RMQ(const vector<T> &values = {}) {
+    RMQ_value(const vector<T> &values = {}) {
         if (!values.empty())
             build(values);
     }
@@ -54,7 +54,7 @@ struct suffix_array {
     vector<int> suffix;
     vector<int> rank;
     vector<int> lcp;
-    RMQ<int> rmq;
+    RMQ_value<int> rmq;
 
     suffix_array() {}
 

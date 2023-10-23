@@ -270,7 +270,7 @@ namespace FFT {
         double fft_cost = 1.5 * N * (get_length(N) + 3);
 
         if (brute_force_cost < fft_cost) {
-            auto &&mod_output_size = [&](int x) {
+            auto mod_output_size = [&](int x) -> int {
                 return x < output_size ? x : x - output_size;
             };
 
@@ -365,7 +365,7 @@ namespace FFT {
         double fft_cost = 3.5 * N * (get_length(N) + 4);
 
         if (brute_force_cost < fft_cost) {
-            auto &&mod_output_size = [&](int x) {
+            auto mod_output_size = [&](int x) -> int {
                 return x < output_size ? x : x - output_size;
             };
 
@@ -819,7 +819,7 @@ struct bignum {
             bignum mult = other * div;
 
             while (div > 0 && mult > chunk) {
-                // cerr << "Decrementing " << div << " (" << i << ")" << '\n';;
+                // cerr << "Decrementing " << div << " (" << i << ")" << '\n';
                 mult -= other;
                 div--;
             }
@@ -1002,7 +1002,7 @@ struct bignum {
             d /= 2;
         }
 
-        auto random_address = [] { char *p = new char; delete p; return uint64_t(p); };
+        auto random_address = []() -> uint64_t { char *p = new char; delete p; return uint64_t(p); };
         static mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count() * (random_address() | 1));
         uint64_t a_max = n < bignum(UINT64_MAX) + 2 ? uint64_t(n - 2) : UINT64_MAX;
         assert(n - 2 >= a_max);
@@ -1042,7 +1042,7 @@ void do_multiply() {
 }
 
 void do_bignum() {
-    auto random_address = [] { char *p = new char; delete p; return uint64_t(p); };
+    auto random_address = []() -> uint64_t { char *p = new char; delete p; return uint64_t(p); };
     static mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count() * (random_address() | 1));
     // cerr << bignum::SECTION << ' ' << bignum::BASE << '\n';
     string s1, s2;

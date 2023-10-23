@@ -242,6 +242,16 @@ struct seg_tree_beats {
         return tree[1];
     }
 
+    segment query_single(int index) {
+        assert(0 <= index && index < tree_n);
+        int position = tree_n + index;
+
+        for (int up = highest_bit(tree_n); up > 0; up--)
+            push_down(position >> up, 1 << up);
+
+        return tree[position];
+    }
+
     void update(int a, int b, const segment_change &change) {
         assert(0 <= a && a <= b && b <= tree_n);
 
@@ -375,7 +385,7 @@ int main() {
             cin >> x;
             tree.update(a, b, segment_change(x));
         } else {
-            segment seg = a == 0 && b == N ? tree.query_full() : tree.query(a, b);
+            segment seg = a == 0 && b == N ? tree.query_full() : b - a == 1 ? tree.query_single(a) : tree.query(a, b);
 
             if (type == "sum")
                 cout << seg.sum << '\n';

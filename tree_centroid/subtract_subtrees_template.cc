@@ -8,10 +8,12 @@
 using namespace std;
 
 struct edge {
-    int node;
-    int64_t weight;
+    int node = -1;
+    int64_t weight = 0;
 
-    edge(int _node = -1, int64_t _weight = 0) : node(_node), weight(_weight) {}
+    edge() {}
+
+    edge(int _node, int64_t _weight) : node(_node), weight(_weight) {}
 };
 
 struct centroid_decomposition {

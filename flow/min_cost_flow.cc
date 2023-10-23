@@ -157,7 +157,7 @@ struct min_cost_flow {
         cost_t total_cost = 0;
         cost_t reduce_sum = 0;
 
-        auto process_path = [&] {
+        auto process_path = [&]() -> void {
             flow_t path_cap = flow_goal - total_flow;
             cost_t cost_sum = 0;
 

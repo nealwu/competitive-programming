@@ -136,7 +136,7 @@ struct biconnected_components {
 struct block_cut_tree {
     biconnected_components &bi_comps;
 
-    int n, BC, T;
+    int n, B, T;
     vector<vector<int>> adj;
     vector<int> parent;
     vector<int> depth;
@@ -155,19 +155,19 @@ struct block_cut_tree {
 
     void build() {
         n = bi_comps.n;
-        BC = int(bi_comps.components.size());
-        T = n + BC;
+        B = int(bi_comps.components.size());
+        T = n + B;
         adj.assign(T, {});
 
-        auto add_edge = [&](int a, int b) {
+        auto add_edge = [&](int a, int b) -> void {
             assert((a < n) ^ (b < n));
             adj[a].push_back(b);
             adj[b].push_back(a);
         };
 
-        for (int bc = 0; bc < BC; bc++)
-            for (int x : bi_comps.components[bc])
-                add_edge(x, n + bc);
+        for (int b = 0; b < B; b++)
+            for (int x : bi_comps.components[b])
+                add_edge(x, n + b);
 
         parent.assign(T, -1);
         depth.assign(T, -1);

@@ -600,7 +600,7 @@ int main() {
             else
                 cout << index_node->key << '\n';
 
-            auto normalize_size = [&](int size) {
+            auto normalize_size = [&](int size) -> int {
                 return min(max(size, 0), tree.size());
             };
 

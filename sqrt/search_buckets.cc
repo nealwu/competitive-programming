@@ -1,5 +1,5 @@
 // TODO: pragmas may help make this faster.
-// #pragma GCC optimize("Ofast,unroll-loops,no-stack-protector,fast-math,inline")
+#pragma GCC optimize("Ofast,unroll-loops,no-stack-protector,fast-math,inline")
 
 #include <algorithm>
 #include <array>

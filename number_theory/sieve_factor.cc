@@ -182,7 +182,7 @@ void test_generate_factors() {
 #include <random>
 
 void test_runtime() {
-    // auto random_address = [] { char *p = new char; delete p; return uint64_t(p); };
+    // auto random_address = []() -> uint64_t { char *p = new char; delete p; return uint64_t(p); };
 
     // const uint64_t SEED = chrono::steady_clock::now().time_since_epoch().count() * (random_address() | 1);
     const uint64_t SEED = 0;

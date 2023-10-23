@@ -337,7 +337,7 @@ struct weighted_LCA {
         if (nodes.empty())
             return {};
 
-        auto &&compare_tour = [&](int a, int b) { return tour_start[a] < tour_start[b]; };
+        auto compare_tour = [&](int a, int b) -> bool { return tour_start[a] < tour_start[b]; };
         sort(nodes.begin(), nodes.end(), compare_tour);
         int k = int(nodes.size());
 

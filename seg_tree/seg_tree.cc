@@ -179,6 +179,16 @@ struct seg_tree {
         return tree[1];
     }
 
+    segment query_single(int index) {
+        assert(0 <= index && index < tree_n);
+        int position = tree_n + index;
+
+        for (int up = highest_bit(tree_n); up > 0; up--)
+            push_down(position >> up, 1 << up);
+
+        return tree[position];
+    }
+
     void update(int a, int b, const segment_change &change) {
         assert(0 <= a && a <= b && b <= tree_n);
 

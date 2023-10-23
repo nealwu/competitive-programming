@@ -290,7 +290,7 @@ struct LCA {
         if (nodes.empty())
             return {};
 
-        auto &&compare_tour = [&](int a, int b) { return tour_start[a] < tour_start[b]; };
+        auto compare_tour = [&](int a, int b) -> bool { return tour_start[a] < tour_start[b]; };
         sort(nodes.begin(), nodes.end(), compare_tour);
         int k = int(nodes.size());
 
@@ -371,7 +371,7 @@ int main() {
     for (int q = 0; q < Q; q++)
         kth_ancestor[q] = lca.get_kth_ancestor(queries[q].first, queries[q].second);
 
-    cerr << "kth ancestor time: " << (clock() - begin) / CLOCKS_PER_SEC << endl;;
+    cerr << "kth ancestor time: " << (clock() - begin) / CLOCKS_PER_SEC << endl;
 
     for (int q = 0; q < Q; q++) {
         int a = queries[q].first, b = queries[q].second;

@@ -300,7 +300,7 @@ struct NTT {
         double ntt_cost = 3.0 * N * (get_length(N) + 3);
 
         if (brute_force_cost < ntt_cost) {
-            auto &&mod_output_size = [&](int x) {
+            auto mod_output_size = [&](int x) -> int {
                 return x < output_size ? x : x - output_size;
             };
 
