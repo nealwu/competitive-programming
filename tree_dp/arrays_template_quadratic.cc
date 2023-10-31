@@ -36,45 +36,66 @@ struct result {
     }
 };
 
-int N, K;
-vector<int> A;
-vector<vector<int>> adj;
-vector<result> results;
+struct tree_dp {
+    int N, K;
+    vector<int> A;
+    vector<vector<int>> adj;
+    vector<result> results;
 
-void extend(result &root) {
-    // Shift the d dimension up by one.
-    root.dp.insert(root.dp.begin(), -INF);
-}
+    tree_dp(int _N = 0) {
+        init(_N);
+    }
 
-void attach(result &root, result &child) {
-    result combined;
-    combined.dp.assign(max(root.size(), child.size()), -INF);
+    void init(int _N) {
+        N = _N;
+        adj.assign(N, {});
+    }
 
-    for (int i = 0; i < root.size(); i++)
-        maximize(combined.dp[i], root.dp[i]);
+    void add_edge(int u, int v) {
+        adj[u].emplace_back(v);
+        adj[v].emplace_back(u);
+    }
 
-    for (int i = 0; i < child.size(); i++)
-        maximize(combined.dp[i], child.dp[i]);
+    void extend(result &root) {
+        // Shift the d dimension up by one.
+        root.dp.insert(root.dp.begin(), -INF);
+    }
 
-    for (int x = 0; x < root.size(); x++)
-        for (int y = max(K - x, 0); y < child.size(); y++)
-            maximize(combined.dp[min(x, y)], root.dp[x] + child.dp[y]);
+    void attach(result &root, result &child) {
+        result combined;
+        combined.dp.assign(max(root.size(), child.size()), -INF);
 
-    root = combined;
-}
+        for (int i = 0; i < root.size(); i++)
+            maximize(combined.dp[i], root.dp[i]);
 
-void dfs(int node, int parent) {
-    result &current = results[node];
-    current = result(A[node]);
+        for (int i = 0; i < child.size(); i++)
+            maximize(combined.dp[i], child.dp[i]);
 
-    for (int neigh : adj[node])
-        if (neigh != parent) {
-            dfs(neigh, node);
-            result &child = results[neigh];
-            extend(child);
-            attach(current, child);
-        }
-}
+        for (int x = 0; x < root.size(); x++)
+            for (int y = max(K - x, 0); y < child.size(); y++)
+                maximize(combined.dp[min(x, y)], root.dp[x] + child.dp[y]);
+
+        root = combined;
+    }
+
+    void dfs(int node, int parent) {
+        result &current = results[node];
+        current = result(A[node]);
+
+        for (int neigh : adj[node])
+            if (neigh != parent) {
+                dfs(neigh, node);
+                result &child = results[neigh];
+                extend(child);
+                attach(current, child);
+            }
+    }
+
+    void solve() {
+        results.assign(N, {});
+        dfs(0, -1);
+    }
+};
 
 int main() {
     ios::sync_with_stdio(false);
@@ -82,23 +103,23 @@ int main() {
     cin.tie(nullptr);
 #endif
 
-    cin >> N >> K;
-    K++;
-    A.resize(N);
-    adj.assign(N, {});
+    int N;
+    cin >> N;
+    tree_dp dp(N);
+    cin >> dp.K;
+    dp.K++;
+    dp.A.resize(N);
 
-    for (auto &a : A)
+    for (auto &a : dp.A)
         cin >> a;
 
     for (int i = 0; i < N - 1; i++) {
         int u, v;
         cin >> u >> v;
         u--; v--;
-        adj[u].push_back(v);
-        adj[v].push_back(u);
+        dp.add_edge(u, v);
     }
 
-    results.assign(N, {});
-    dfs(0, -1);
-    cout << results[0].maximum() << '\n';
+    dp.solve();
+    cout << dp.results[0].maximum() << '\n';
 }

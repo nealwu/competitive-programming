@@ -8,51 +8,79 @@
 #include <vector>
 using namespace std;
 
-int N, MOD;
-vector<vector<int>> adj;
+int MOD;
 
-// down[node] = number of ways to paint node's subtree where node must be painted black.
-// up[node] = number of ways to color parent's subtree of node, including all white.
-// combined[node] = answer for the whole tree when rooted at node.
-vector<int64_t> down;
-vector<int64_t> up;
-vector<int64_t> combined;
+struct tree_dp {
+    int N;
+    vector<vector<int>> adj;
 
-void solve_down(int node, int parent) {
-    vector<int> &children = adj[node];
-    // Erase the edge from node to parent.
-    children.erase(remove(children.begin(), children.end(), parent), children.end());
-    down[node] = 1;
-
-    for (int child : children) {
-        assert(child != parent);
-        solve_down(child, node);
-        down[node] = down[node] * (down[child] + 1) % MOD;
-    }
-}
-
-void solve_up(int node, int parent) {
-    vector<int> &children = adj[node];
-    int n = int(children.size());
-    vector<int64_t> prefix(n + 1, 1);
-    vector<int64_t> suffix(n + 1, 1);
-
-    for (int i = 0; i < n; i++)
-        prefix[i + 1] = prefix[i] * (down[children[i]] + 1) % MOD;
-
-    for (int i = n - 1; i >= 0; i--)
-        suffix[i] = suffix[i + 1] * (down[children[i]] + 1) % MOD;
-
-    for (int i = 0; i < n; i++)
-        up[children[i]] = (1 + prefix[i] * suffix[i + 1] % MOD * up[node]) % MOD;
-
-    for (int child : children) {
-        assert(child != parent);
-        solve_up(child, node);
+    tree_dp(int _N = 0) {
+        init(_N);
     }
 
-    combined[node] = up[node] * down[node] % MOD;
-}
+    void init(int _N) {
+        N = _N;
+        adj.assign(N, {});
+    }
+
+    void add_edge(int u, int v) {
+        adj[u].emplace_back(v);
+        adj[v].emplace_back(u);
+    }
+
+    // down[node] = number of ways to paint node's subtree where node must be painted black.
+    // up[node] = number of ways to color parent's subtree of node, including all white.
+    // combined[node] = answer for the whole tree when rooted at node.
+    vector<int64_t> down;
+    vector<int64_t> up;
+    vector<int64_t> combined;
+
+    void solve_down(int node, int parent) {
+        vector<int> &children = adj[node];
+        // Erase the edge from node to parent.
+        children.erase(remove(children.begin(), children.end(), parent), children.end());
+        down[node] = 1;
+
+        for (int child : children) {
+            assert(child != parent);
+            solve_down(child, node);
+            down[node] = down[node] * (down[child] + 1) % MOD;
+        }
+    }
+
+    void solve_up(int node, int parent) {
+        vector<int> &children = adj[node];
+        int n = int(children.size());
+        vector<int64_t> prefix(n + 1, 1);
+        vector<int64_t> suffix(n + 1, 1);
+
+        for (int i = 0; i < n; i++)
+            prefix[i + 1] = prefix[i] * (down[children[i]] + 1) % MOD;
+
+        for (int i = n - 1; i >= 0; i--)
+            suffix[i] = suffix[i + 1] * (down[children[i]] + 1) % MOD;
+
+        for (int i = 0; i < n; i++)
+            up[children[i]] = (1 + prefix[i] * suffix[i + 1] % MOD * up[node]) % MOD;
+
+        for (int child : children) {
+            assert(child != parent);
+            solve_up(child, node);
+        }
+
+        combined[node] = up[node] * down[node] % MOD;
+    }
+
+    void solve() {
+        down.resize(N);
+        solve_down(0, -1);
+
+        up.resize(N);
+        up[0] = 1;
+        combined.resize(N);
+        solve_up(0, -1);
+    }
+};
 
 int main() {
     ios::sync_with_stdio(false);
@@ -60,25 +88,19 @@ int main() {
     cin.tie(nullptr);
 #endif
 
+    int N;
     cin >> N >> MOD;
-    adj.assign(N, {});
+    tree_dp dp(N);
 
     for (int i = 0; i < N - 1; i++) {
         int a, b;
         cin >> a >> b;
         a--; b--;
-        adj[a].push_back(b);
-        adj[b].push_back(a);
+        dp.add_edge(a, b);
     }
 
-    down.resize(N);
-    solve_down(0, -1);
-
-    up.resize(N);
-    up[0] = 1;
-    combined.resize(N);
-    solve_up(0, -1);
+    dp.solve();
 
     for (int i = 0; i < N; i++)
-        cout << combined[i] << '\n';
+        cout << dp.combined[i] << '\n';
 }

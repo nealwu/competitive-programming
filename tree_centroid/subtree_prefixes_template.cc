@@ -158,7 +158,6 @@ struct centroid_decomposition {
     }
 
     void add_edge(int u, int v, int64_t weight = 0) {
-        assert(u != v);
         adj[u].emplace_back(v, weight);
         adj[v].emplace_back(u, weight);
     }
