@@ -22,7 +22,6 @@ struct find_bridges {
     vector<array<int, 2>> edge_list;
     vector<int> tour_start;
     vector<int> low_link;
-
     vector<bool> visited;
     vector<bool> is_bridge;
     int tour;
@@ -47,26 +46,25 @@ struct find_bridges {
         edges++;
     }
 
-    void dfs(int node, int parent) {
+    void dfs(int node, int parent_edge) {
         assert(!visited[node]);
         visited[node] = true;
         tour_start[node] = tour++;
         low_link[node] = tour_start[node];
-        int parent_count = 0;
 
         for (edge &e : adj[node]) {
-            // Skip the first edge to the parent, but allow multi-edges.
-            if (e.node == parent && parent_count++ == 0)
+            // Skip the previous edge to the parent, but allow multi-edges.
+            if (e.index == parent_edge)
                 continue;
 
             if (visited[e.node]) {
                 // e.node is a candidate for low_link.
                 low_link[node] = min(low_link[node], tour_start[e.node]);
             } else {
-                dfs(e.node, node);
-                is_bridge[e.index] = low_link[e.node] > tour_start[node];
                 // e.node is part of our subtree.
+                dfs(e.node, e.index);
                 low_link[node] = min(low_link[node], low_link[e.node]);
+                is_bridge[e.index] = low_link[e.node] > tour_start[node];
             }
         }
     }

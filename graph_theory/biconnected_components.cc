@@ -26,17 +26,19 @@ struct biconnected_components {
         edge(int _node, int _index) : node(_node), index(_index) {}
     };
 
+    struct bi_component {
+        vector<int> nodes, edges;
+    };
+
     int n, edges;
     vector<vector<edge>> adj;
     vector<array<int, 2>> edge_list;
-    vector<int> tour_start;
-    vector<int> low_link;
-
-    vector<bool> visited;
-    vector<bool> is_cut;
-    vector<bool> is_bridge;
+    vector<int> tour_start, low_link;
+    vector<bool> visited, is_cut;
+    vector<bool> is_tree, is_bridge;
+    vector<bi_component> components;
+    vector<int> edge_to_component;
     vector<int> stack;
-    vector<vector<int>> components;
     int tour;
 
     biconnected_components(int _n = 0) {
@@ -59,29 +61,59 @@ struct biconnected_components {
         edges++;
     }
 
-    void dfs(int node, int parent) {
+    int get_deeper_node(int edge_index) const {
+        int a = edge_list[edge_index][0], b = edge_list[edge_index][1];
+        return tour_start[a] > tour_start[b] ? a : b;
+    }
+
+    void create_component(int root, const vector<int> &edge_indices) {
+        bi_component component;
+        component.edges = edge_indices;
+
+        if (root >= 0)
+            component.nodes = {root};
+
+        for (int e_index : edge_indices) {
+            if (is_tree[e_index])
+                component.nodes.push_back(get_deeper_node(e_index));
+
+            edge_to_component[e_index] = int(components.size());
+        }
+
+        components.push_back(component);
+    }
+
+    void dfs(int node, int parent_edge) {
         assert(!visited[node]);
         visited[node] = true;
         tour_start[node] = tour++;
         low_link[node] = tour_start[node];
         is_cut[node] = false;
-        int parent_count = 0, children = 0;
+        int children = 0;
 
         for (edge &e : adj[node]) {
-            // Skip the first edge to the parent, but allow multi-edges.
-            if (e.node == parent && parent_count++ == 0)
+            // Skip the previous edge to the parent, but allow multi-edges.
+            if (e.index == parent_edge)
                 continue;
+
+            if (e.node == node) {
+                create_component(-1, {e.index});
+                continue;
+            }
 
             if (visited[e.node]) {
                 // e.node is a candidate for low_link.
                 low_link[node] = min(low_link[node], tour_start[e.node]);
 
                 if (tour_start[e.node] < tour_start[node])
-                    stack.push_back(node);
+                    stack.push_back(e.index);
             } else {
-                int size = int(stack.size());
-                dfs(e.node, node);
+                // This is a tree edge.
+                is_tree[e.index] = true;
                 children++;
+                size_t size_before = stack.size();
+                dfs(e.node, e.index);
+                stack.push_back(e.index);
 
                 // e.node is part of our subtree.
                 low_link[node] = min(low_link[node], low_link[e.node]);
@@ -89,19 +121,13 @@ struct biconnected_components {
                 if (low_link[e.node] > tour_start[node]) {
                     // This is a bridge.
                     is_bridge[e.index] = true;
-                    vector<int> component = {node, e.node};
-                    sort(component.begin(), component.end());
-                    components.push_back(component);
+                    create_component(node, {e.index});
+                    assert(stack.back() == e.index);
+                    stack.pop_back();
                 } else if (low_link[e.node] == tour_start[node]) {
                     // This is the root of a biconnected component.
-                    stack.push_back(node);
-                    vector<int> component(stack.begin() + size, stack.end());
-                    sort(component.begin(), component.end());
-                    component.erase(unique(component.begin(), component.end()), component.end());
-                    components.push_back(component);
-                    stack.resize(size);
-                } else {
-                    stack.push_back(node);
+                    create_component(node, vector<int>(stack.begin() + size_before, stack.end()));
+                    stack.resize(size_before);
                 }
 
                 // In general, `node` is a cut vertex iff it has a child whose subtree cannot reach above `node`.
@@ -111,16 +137,18 @@ struct biconnected_components {
         }
 
         // The root of the tree is a cut vertex iff it has more than one child.
-        if (parent < 0)
+        if (parent_edge < 0)
             is_cut[node] = children > 1;
     }
 
     void build(int root = -1) {
         visited.assign(n, false);
         is_cut.assign(n, false);
+        is_tree.assign(edges, false);
         is_bridge.assign(edges, false);
-        stack.clear();
+        edge_to_component.assign(edges, -1);
         components.clear();
+        stack.clear();
         tour = 0;
 
         if (0 <= root && root < n)
@@ -129,6 +157,9 @@ struct biconnected_components {
         for (int i = 0; i < n; i++)
             if (!visited[i])
                 dfs(i, -1);
+
+        assert(stack.empty());
+        assert(find(edge_to_component.begin(), edge_to_component.end(), -1) == edge_to_component.end());
     }
 };
 
@@ -166,7 +197,7 @@ struct block_cut_tree {
         };
 
         for (int b = 0; b < B; b++)
-            for (int x : bi_comps.components[b])
+            for (int x : bi_comps.components[b].nodes)
                 add_edge(x, n + b);
 
         parent.assign(T, -1);
@@ -214,7 +245,6 @@ int main() {
             cut_vertices.push_back(i);
 
     int CV = int(cut_vertices.size());
-    cout << CV << '\n';
 
     for (int i = 0; i < CV; i++)
         cout << cut_vertices[i] + 1 << (i < CV - 1 ? ' ' : '\n');
