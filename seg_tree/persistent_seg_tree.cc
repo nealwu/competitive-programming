@@ -89,9 +89,9 @@ struct segment {
     }
 
     // TODO: decide whether to re-implement this for better performance. Mainly relevant when segments contain arrays.
-    void join(const segment &a, const segment &b) {
-        *this = a;
-        join(b);
+    void join(const segment &seg0, const segment &seg1) {
+        *this = seg0;
+        join(seg1);
     }
 };
 
