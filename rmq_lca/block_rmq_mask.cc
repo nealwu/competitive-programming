@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <iostream>
 #include <vector>
@@ -55,14 +56,14 @@ struct RMQ {
 
 template<typename T, bool maximum_mode = false>
 struct block_RMQ {
+    // TODO: when adjusting BLOCK, make sure to adjust mask_t to match (e.g., BLOCK = 16 -> mask_t = uint16_t).
+    static const int BLOCK = 16;
+    using mask_t = uint16_t;
+    using index_t = uint8_t;
+
     static int highest_bit(unsigned x) {
         return x == 0 ? -1 : 31 - __builtin_clz(x);
     }
-
-    // TODO: when adjusting BLOCK, make sure to adjust mask_t to match (e.g., BLOCK = 16 -> mask_t = uint16_t).
-    static const int BLOCK = 8;
-    using mask_t = uint8_t;
-    using index_t = uint8_t;
 
     int n = 0;
     vector<T> values;
