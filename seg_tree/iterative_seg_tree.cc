@@ -165,7 +165,7 @@ struct seg_tree {
         tree[position].apply(length, changes[position]);
     }
 
-    // Calls join for all necessary nodes after updating the range [a, b).
+    // Calls join_and_apply for all necessary nodes after updating the range [a, b).
     void join_all(int a, int b) {
         assert(0 <= a && a < b && b <= tree_n);
         a += tree_n;
