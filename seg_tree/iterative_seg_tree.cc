@@ -196,12 +196,12 @@ struct seg_tree {
         // Iterate the 0-bits of `a` bottom-up and the 1-bits of `b` top-down.
         for (int v = ~a & anc_mask; v != 0; v &= v - 1) {
             int i = __builtin_ctz(v);
-            range_op((a >> i) + 1, 1 << i);
+            if (range_op((a >> i) + 1, 1 << i)) return;  // Early return used for search only
         }
 
         for (int v = b & anc_mask, i; v != 0; v ^= 1 << i) {
             i = highest_bit(v);
-            range_op((b >> i) - 1, 1 << i);
+            if (range_op((b >> i) - 1, 1 << i)) return;
         }
 
         if (needs_join)
@@ -211,8 +211,9 @@ struct seg_tree {
     segment query(int a, int b) {
         segment answer;
 
-        process_range(a, b, false, [&](int position, int) -> void {
+        process_range(a, b, false, [&](int position, int) -> bool {
             answer.join(tree[position]);
+            return false;
         });
 
         return answer;
@@ -233,8 +234,9 @@ struct seg_tree {
     }
 
     void update(int a, int b, const segment_change &change) {
-        process_range(a, b, true, [&](int position, int length) -> void {
+        process_range(a, b, true, [&](int position, int length) -> bool {
             apply_and_combine(position, length, change);
+            return false;
         });
     }
 
@@ -270,21 +272,34 @@ struct seg_tree {
         if (!should_join(current, current))
             return first - 1;
 
-        return y_combinator([&](auto search, int position, int start, int end) -> int {
-            if (end <= first) {
-                return end;
-            } else if (first <= start && end <= n && should_join(current, tree[position])) {
+        int node = -1;
+
+        // Try to build the range [first, n); when a node fails, search down instead.
+        process_range(first, n, false, [&](int position, int) -> bool {
+            if (should_join(current, tree[position])) {
                 current.join(tree[position]);
-                return end;
-            } else if (end - start == 1) {
-                return start;
+                return false;
             }
 
-            push_down(position, end - start);
-            int mid = (start + end) / 2;
-            int left = search(2 * position, start, mid);
-            return left < mid ? left : search(2 * position + 1, mid, end);
-        })(1, 0, tree_n);
+            node = position;
+            return true;
+        });
+
+        if (node < 0)
+            return n;
+
+        while (node < tree_n) {
+            push_down(node, tree_n >> highest_bit(node));
+
+            if (should_join(current, tree[2 * node])) {
+                current.join(tree[2 * node]);
+                node = 2 * node + 1;
+            } else {
+                node = 2 * node;
+            }
+        }
+
+        return node - tree_n;
     }
 };
 

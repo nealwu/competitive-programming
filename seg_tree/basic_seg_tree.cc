@@ -83,7 +83,7 @@ struct segment {
 };
 
 struct basic_seg_tree {
-    // TODO: POWER_OF_TWO_MODE is necessary in order to call query_full() or to binary search the tree.
+    // TODO: POWER_OF_TWO_MODE is necessary in order to call query_full().
     static const bool POWER_OF_TWO_MODE = true;
 
     static int highest_bit(unsigned x) {
@@ -133,20 +133,21 @@ struct basic_seg_tree {
         // Iterate the 0-bits of `a` bottom-up and the 1-bits of `b` top-down.
         for (int v = ~a & anc_mask; v != 0; v &= v - 1) {
             int i = __builtin_ctz(v);
-            range_op((a >> i) + 1);
+            if (range_op((a >> i) + 1)) return;  // Early return used for search only
         }
 
         for (int v = b & anc_mask, i; v != 0; v ^= 1 << i) {
             i = highest_bit(v);
-            range_op((b >> i) - 1);
+            if (range_op((b >> i) - 1)) return;
         }
     }
 
     segment query(int a, int b) const {
         segment answer;
 
-        process_range(a, b, [&](int position) -> void {
+        process_range(a, b, [&](int position) -> bool {
             answer.join(tree[position]);
+            return false;
         });
 
         return answer;
@@ -186,7 +187,6 @@ struct basic_seg_tree {
     // Finds the end of the last subarray starting at `first` satisfying `should_join` via binary search in O(log n).
     template<typename T_bool>
     int find_last_subarray(T_bool &&should_join, int n, int first = 0) const {
-        assert(POWER_OF_TWO_MODE);
         assert(0 <= first && first <= n);
         segment current;
 
@@ -194,20 +194,32 @@ struct basic_seg_tree {
         if (!should_join(current, current))
             return first - 1;
 
-        return y_combinator([&](auto search, int position, int start, int end) -> int {
-            if (end <= first) {
-                return end;
-            } else if (first <= start && end <= n && should_join(current, tree[position])) {
+        int node = -1;
+
+        // Try to build the range [first, tree_n); when a node fails, search down instead.
+        // We use the range [first, tree_n) instead of [first, n) for a boost in speed.
+        process_range(first, tree_n, [&](int position) -> bool {
+            if (should_join(current, tree[position])) {
                 current.join(tree[position]);
-                return end;
-            } else if (end - start == 1) {
-                return start;
+                return false;
             }
 
-            int mid = (start + end) / 2;
-            int left = search(2 * position, start, mid);
-            return left < mid ? left : search(2 * position + 1, mid, end);
-        })(1, 0, tree_n);
+            node = position;
+            return true;
+        });
+
+        if (node < 0)
+            return n;
+
+        while (node < tree_n)
+            if (should_join(current, tree[2 * node])) {
+                current.join(tree[2 * node]);
+                node = 2 * node + 1;
+            } else {
+                node = 2 * node;
+            }
+
+        return node - tree_n;
     }
 };
 
@@ -292,5 +304,5 @@ int main() {
     }
 
     for (int i = 0; i < N; i++)
-        cout << tree.tree[tree.tree_n + i].sum << (i < N - 1 ? ' ' : '\n');
+        cout << tree.query_single(i).sum << (i < N - 1 ? ' ' : '\n');
 }

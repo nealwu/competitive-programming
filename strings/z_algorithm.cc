@@ -38,7 +38,6 @@ int main() {
     string pattern, text;
     cin >> pattern >> text;
     int n = int(pattern.size()), m = int(text.size());
-
     vector<int> Z = z_algorithm(pattern + text);
 
     for (int i = 0; i < m; i++)
