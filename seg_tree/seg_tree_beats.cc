@@ -172,18 +172,15 @@ struct seg_tree_beats {
         while (tree_n < n)
             tree_n *= 2;
 
-        tree.assign(2 * tree_n, segment());
-        changes.assign(tree_n, segment_change());
+        tree.assign(2 * tree_n, {});
+        changes.assign(tree_n, {});
     }
 
     // Builds our tree from an array in O(n).
     void build(const vector<segment> &initial) {
         int n = int(initial.size());
         init(n);
-        assert(n <= tree_n);
-
-        for (int i = 0; i < n; i++)
-            tree[tree_n + i] = initial[i];
+        copy(initial.begin(), initial.end(), tree.begin() + tree_n);
 
         for (int position = tree_n - 1; position > 0; position--)
             tree[position].join(tree[2 * position], tree[2 * position + 1]);
@@ -275,16 +272,11 @@ struct seg_tree_beats {
         }
     }
 
-    vector<segment> to_array() {
+    vector<segment> to_array(int n) {
         for (int i = 1; i < tree_n; i++)
             push_down(i, tree_n >> highest_bit(i));
 
-        vector<segment> segs(tree_n);
-
-        for (int i = 0; i < tree_n; i++)
-            segs[i] = tree[tree_n + i];
-
-        return segs;
+        return vector<segment>(tree.begin() + tree_n, tree.begin() + tree_n + n);
     }
 
     // Finds the end of the last subarray starting at `first` satisfying `should_join` via binary search in O(log n).
@@ -398,7 +390,7 @@ int main() {
         }
     }
 
-    vector<segment> segs = tree.to_array();
+    vector<segment> segs = tree.to_array(N);
 
     for (int i = 0; i < N; i++)
         cout << segs[i].sum << (i < N - 1 ? ' ' : '\n');

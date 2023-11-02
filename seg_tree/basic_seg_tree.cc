@@ -82,11 +82,13 @@ struct segment {
     }
 };
 
-int right_half[32];
-
 struct basic_seg_tree {
     // TODO: POWER_OF_TWO_MODE is necessary in order to call query_full() or to binary search the tree.
     static const bool POWER_OF_TWO_MODE = true;
+
+    static int highest_bit(unsigned x) {
+        return x == 0 ? -1 : 31 - __builtin_clz(x);
+    }
 
     int tree_n = 0;
     vector<segment> tree;
@@ -106,17 +108,14 @@ struct basic_seg_tree {
             tree_n = n;
         }
 
-        tree.assign(2 * tree_n, segment());
+        tree.assign(2 * tree_n, {});
     }
 
     // Builds our tree from an array in O(n).
     void build(const vector<segment> &initial) {
         int n = int(initial.size());
         init(n);
-        assert(n <= tree_n);
-
-        for (int i = 0; i < n; i++)
-            tree[tree_n + i] = initial[i];
+        copy(initial.begin(), initial.end(), tree.begin() + tree_n);
 
         for (int position = tree_n - 1; position > 0; position--)
             tree[position].join(tree[2 * position], tree[2 * position + 1]);
@@ -125,18 +124,22 @@ struct basic_seg_tree {
     template<typename T_range_op>
     void process_range(int a, int b, T_range_op &&range_op) const {
         assert(0 <= a && a <= b && b <= tree_n);
-        int r_size = 0;
+        a += tree_n;
+        b += tree_n;
+        a--;
+        int anc_depth = highest_bit(a ^ b);
+        int anc_mask = (1 << anc_depth) - 1;
 
-        for (a += tree_n, b += tree_n; a < b; a /= 2, b /= 2) {
-            if (a & 1)
-                range_op(a++);
-
-            if (b & 1)
-                right_half[r_size++] = --b;
+        // Iterate the 0-bits of `a` bottom-up and the 1-bits of `b` top-down.
+        for (int v = ~a & anc_mask; v != 0; v &= v - 1) {
+            int i = __builtin_ctz(v);
+            range_op((a >> i) + 1);
         }
 
-        for (int i = r_size - 1; i >= 0; i--)
-            range_op(right_half[i]);
+        for (int v = b & anc_mask, i; v != 0; v ^= 1 << i) {
+            i = highest_bit(v);
+            range_op((b >> i) - 1);
+        }
     }
 
     segment query(int a, int b) const {

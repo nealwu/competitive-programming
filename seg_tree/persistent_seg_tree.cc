@@ -129,7 +129,7 @@ struct persistent_seg_tree {
             tree.reserve(reserve_size);
         }
 
-        tree.assign(2 * tree_n, node());
+        tree.assign(2 * tree_n, {});
 
         for (int i = 1; i < tree_n; i++) {
             tree[i].left = 2 * i;

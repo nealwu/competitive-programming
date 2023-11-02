@@ -95,8 +95,6 @@ struct segment {
     }
 };
 
-pair<int, int> right_half[32];
-
 struct seg_tree {
     static int highest_bit(unsigned x) {
         return x == 0 ? -1 : 31 - __builtin_clz(x);
@@ -117,18 +115,15 @@ struct seg_tree {
         while (tree_n < n)
             tree_n *= 2;
 
-        tree.assign(2 * tree_n, segment());
-        changes.assign(tree_n, segment_change());
+        tree.assign(2 * tree_n, {});
+        changes.assign(tree_n, {});
     }
 
     // Builds our tree from an array in O(n).
     void build(const vector<segment> &initial) {
         int n = int(initial.size());
         init(n);
-        assert(n <= tree_n);
-
-        for (int i = 0; i < n; i++)
-            tree[tree_n + i] = initial[i];
+        copy(initial.begin(), initial.end(), tree.begin() + tree_n);
 
         for (int position = tree_n - 1; position > 0; position--)
             tree[position].join(tree[2 * position], tree[2 * position + 1]);
@@ -154,11 +149,14 @@ struct seg_tree {
         assert(0 <= a && a < b && b <= tree_n);
         a += tree_n;
         b += tree_n - 1;
+        int last = max(highest_bit(a ^ b), 0);
 
-        for (int up = highest_bit(tree_n); up > 0; up--) {
-            int x = a >> up, y = b >> up;
-            push_down(x, 1 << up);
-            if (x != y) push_down(y, 1 << up);
+        for (int up = highest_bit(tree_n); up > last; up--)
+            push_down(a >> up, 1 << up);
+
+        for (int up = last; up > 0; up--) {
+            push_down(a >> up, 1 << up);
+            push_down(b >> up, 1 << up);
         }
     }
 
@@ -172,36 +170,39 @@ struct seg_tree {
         assert(0 <= a && a < b && b <= tree_n);
         a += tree_n;
         b += tree_n - 1;
-        int length = 1;
+        int last = max(highest_bit(a ^ b), 0);
 
-        while (a > 1) {
-            a /= 2;
-            b /= 2;
-            length *= 2;
-            join_and_apply(a, length);
-            if (a != b) join_and_apply(b, length);
+        for (int up = 1; up <= last; up++) {
+            join_and_apply(a >> up, 1 << up);
+            join_and_apply(b >> up, 1 << up);
         }
+
+        for (int up = last + 1; up <= highest_bit(tree_n); up++)
+            join_and_apply(a >> up, 1 << up);
     }
 
     template<typename T_range_op>
     void process_range(int a, int b, bool needs_join, T_range_op &&range_op) {
         assert(0 <= a && a <= b && b <= tree_n);
-
         if (a == b) return;
         push_all(a, b);
         int original_a = a, original_b = b;
-        int length = 1, r_size = 0;
+        a += tree_n;
+        b += tree_n;
+        a--;
+        int anc_depth = highest_bit(a ^ b);
+        int anc_mask = (1 << anc_depth) - 1;
 
-        for (a += tree_n, b += tree_n; a < b; a /= 2, b /= 2, length *= 2) {
-            if (a & 1)
-                range_op(a++, length);
-
-            if (b & 1)
-                right_half[r_size++] = {--b, length};
+        // Iterate the 0-bits of `a` bottom-up and the 1-bits of `b` top-down.
+        for (int v = ~a & anc_mask; v != 0; v &= v - 1) {
+            int i = __builtin_ctz(v);
+            range_op((a >> i) + 1, 1 << i);
         }
 
-        for (int i = r_size - 1; i >= 0; i--)
-            range_op(right_half[i].first, right_half[i].second);
+        for (int v = b & anc_mask, i; v != 0; v ^= 1 << i) {
+            i = highest_bit(v);
+            range_op((b >> i) - 1, 1 << i);
+        }
 
         if (needs_join)
             join_all(original_a, original_b);
@@ -252,16 +253,11 @@ struct seg_tree {
         }
     }
 
-    vector<segment> to_array() {
+    vector<segment> to_array(int n) {
         for (int i = 1; i < tree_n; i++)
             push_down(i, tree_n >> highest_bit(i));
 
-        vector<segment> segs(tree_n);
-
-        for (int i = 0; i < tree_n; i++)
-            segs[i] = tree[tree_n + i];
-
-        return segs;
+        return vector<segment>(tree.begin() + tree_n, tree.begin() + tree_n + n);
     }
 
     // Finds the end of the last subarray starting at `first` satisfying `should_join` via binary search in O(log n).
@@ -371,7 +367,7 @@ int main() {
         }
     }
 
-    vector<segment> segs = tree.to_array();
+    vector<segment> segs = tree.to_array(N);
 
     for (int i = 0; i < N; i++)
         cout << segs[i].sum << (i < N - 1 ? ' ' : '\n');
