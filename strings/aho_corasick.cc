@@ -9,7 +9,7 @@ using namespace std;
 const int INF = int(1e9) + 5;
 
 // This version of aho_corasick uses a bitmask of size ALPHABET, so it must be modified for ALPHABET > 26.
-template<char MIN_CHAR = 'a'>
+template<char MIN_CHAR = 'a', typename mask_t = uint32_t>
 struct aho_corasick {
     struct node {
         // suff = the index of the node of the longest strict suffix of the current node that's also in the tree.
@@ -24,7 +24,7 @@ struct aho_corasick {
         int suff = -1, dict = -1, depth = 0;
         int word_index = -1, word_count = 0;
         int first_child = -1;
-        unsigned child_mask = 0;
+        mask_t child_mask = 0;
 
         int get_child(char c) const {
             int bit = c - MIN_CHAR;
@@ -33,7 +33,7 @@ struct aho_corasick {
                 return -1;
 
             assert(first_child >= 0);
-            return first_child + __builtin_popcount(child_mask & ((1 << bit) - 1));
+            return first_child + __builtin_popcount(child_mask & ((mask_t(1) << bit) - 1));
         }
     };
 
@@ -65,7 +65,7 @@ struct aho_corasick {
 
         assert(nodes[current].child_mask >> bit == 0);
         int index = int(nodes.size());
-        nodes[current].child_mask |= 1 << bit;
+        nodes[current].child_mask |= mask_t(1) << bit;
 
         if (nodes[current].first_child < 0)
             nodes[current].first_child = index;
@@ -142,13 +142,13 @@ struct aho_corasick {
 
         // Solve suffix parents by traversing in order of depth (BFS order).
         for (int i = 0; i < int(nodes.size()); i++) {
-            unsigned child_mask = nodes[i].child_mask;
+            mask_t child_mask = nodes[i].child_mask;
 
             while (child_mask != 0) {
-                int bit = __builtin_ctz(child_mask);
+                int bit = __builtin_ctzll(child_mask);
                 char c = char(MIN_CHAR + bit);
                 int index = nodes[i].get_child(c);
-                child_mask ^= 1 << bit;
+                child_mask ^= mask_t(1) << bit;
 
                 // Find index's suffix parent by traversing suffix parents of i until one of them has a child c.
                 int suffix_parent = get_suffix_link(nodes[i].suff, c);
