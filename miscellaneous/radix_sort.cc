@@ -16,29 +16,26 @@ struct identity_extract {
 template<typename T, typename T_extract_key = identity_extract>
 void radix_sort(vector<T> &data, int bits_per_pass = 10, const T_extract_key &extract_key = identity_extract()) {
     if (int64_t(data.size()) * (64 - __builtin_clzll(data.size())) < 2 * (1 << bits_per_pass)) {
-        stable_sort(data.begin(), data.end(), [&](const T &a, const T &b) {
+        stable_sort(data.begin(), data.end(), [&](const T &a, const T &b) -> bool {
             return extract_key(a) < extract_key(b);
         });
         return;
     }
 
     using T_key = decltype(extract_key(data.front()));
-    T_key minimum = numeric_limits<T_key>::max();
-
-    for (T &x : data)
-        minimum = min(minimum, extract_key(x));
-
-    int max_bits = 0;
+    T_key minimum = numeric_limits<T_key>::max(), maximum = numeric_limits<T_key>::lowest();
 
     for (T &x : data) {
         T_key key = extract_key(x);
-        max_bits = max(max_bits, key == minimum ? 0 : 64 - __builtin_clzll(key - minimum));
+        minimum = min(minimum, key);
+        maximum = max(maximum, key);
     }
 
+    int max_bits = minimum == maximum ? 0 : 64 - __builtin_clzll(maximum - minimum);
     int passes = max((max_bits + bits_per_pass / 2) / bits_per_pass, 1);
 
     if (64 - __builtin_clzll(data.size()) <= 1.5 * passes) {
-        stable_sort(data.begin(), data.end(), [&](const T &a, const T &b) {
+        stable_sort(data.begin(), data.end(), [&](const T &a, const T &b) -> bool {
             return extract_key(a) < extract_key(b);
         });
         return;
@@ -50,28 +47,25 @@ void radix_sort(vector<T> &data, int bits_per_pass = 10, const T_extract_key &ex
 
     for (int p = 0; p < passes; p++) {
         int bits = (max_bits + p) / passes;
-        counts.assign(1 << bits, 0);
+        int bitmask = (1 << bits) - 1;
+        counts.assign((1 << bits) + 1, 0);
 
         for (T &x : data) {
             T_key key = T_key(extract_key(x) - minimum);
-            counts[(key >> bits_so_far) & ((1 << bits) - 1)]++;
+            int key_section = int(key >> bits_so_far & bitmask);
+            counts[key_section + 1]++;
         }
 
-        int count_sum = 0;
-
-        for (int &count : counts) {
-            int current = count;
-            count = count_sum;
-            count_sum += current;
-        }
+        for (int i = 1; i <= 1 << bits; i++)
+            counts[i] += counts[i - 1];
 
         for (T &x : data) {
             T_key key = T_key(extract_key(x) - minimum);
-            int key_section = int((key >> bits_so_far) & ((1 << bits) - 1));
+            int key_section = int(key >> bits_so_far & bitmask);
             buffer[counts[key_section]++] = x;
         }
 
-        swap(data, buffer);
+        data.swap(buffer);
         bits_so_far += bits;
     }
 }

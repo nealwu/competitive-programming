@@ -63,7 +63,7 @@ int cross_sign(const point &a, const point &b) {
         long double double_value = (long double) a.x * b.y - (long double) b.x * a.y;
 
         if (abs(double_value) > 1e18)
-            return double_value > 0 ? +1 : -1;
+            return (double_value > 0) - (double_value < 0);
     }
 
     uint64_t uint64_value = (uint64_t) a.x * b.y - (uint64_t) b.x * a.y;

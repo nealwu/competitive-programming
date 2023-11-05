@@ -19,7 +19,7 @@ struct fraction {
             long double double_value = (long double) a.numer * b.denom - (long double) b.numer * a.denom;
 
             if (abs(double_value) > 1e18)
-                return double_value > 0 ? +1 : -1;
+                return (double_value > 0) - (double_value < 0);
         }
 
         uint64_t uint64_value = (uint64_t) a.numer * b.denom - (uint64_t) b.numer * a.denom;

@@ -460,6 +460,7 @@ struct splay_tree {
         return after->child[0];
     }
 
+    // Applies an update to the subtree rooted at `node`.
     void update(splay_node *node, const splay_change &change) {
         if (node == nullptr)
             return;
