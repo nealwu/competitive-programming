@@ -204,7 +204,7 @@ struct persistent_basic_seg_tree {
         });
     }
 
-    int update(int root, int index, const segment &new_seg) {
+    int set(int root, int index, const segment &new_seg) {
         assert(root > 0 && 0 <= index && index < tree_n);
 
         return _update_tree(root, 0, tree_n, index, [&](int position, int) -> void {
