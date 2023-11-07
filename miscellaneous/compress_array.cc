@@ -40,8 +40,8 @@ template<typename Head, typename... Tail> void dbg_out(Head H, Tail... T) { cerr
 #endif
 
 // Compresses the values in arr to be in the range [0, n).
-template<typename T>
-vector<int> compress_array(const vector<T> &arr) {
+template<typename T_out = int, typename T>
+vector<T_out> compress_array(const vector<T> &arr) {
     int n = int(arr.size());
     vector<pair<T, int>> sorted(n);
 
@@ -52,7 +52,7 @@ vector<int> compress_array(const vector<T> &arr) {
         return x.first < y.first;
     });
 
-    vector<int> compressed(n);
+    vector<T_out> compressed(n);
     int current = 0;
 
     for (int i = 0, j = 0; i < n; i = j) {
@@ -67,13 +67,13 @@ vector<int> compress_array(const vector<T> &arr) {
 
 
 // Compresses the values in arr to be in the range [0, n).
-template<typename T>
-vector<int> compress_array_binary_search(const vector<T> &arr) {
+template<typename T_out = int, typename T>
+vector<T_out> compress_array_binary_search(const vector<T> &arr) {
     int n = int(arr.size());
     vector<T> sorted = arr;
     sort(sorted.begin(), sorted.end());
     sorted.erase(unique(sorted.begin(), sorted.end()), sorted.end());
-    vector<int> compressed(n);
+    vector<T_out> compressed(n);
 
     for (int i = 0; i < n; i++)
         compressed[i] = int(lower_bound(sorted.begin(), sorted.end(), arr[i]) - sorted.begin());
@@ -87,10 +87,11 @@ uint64_t random_address() { char *p = new char; delete p; return uint64_t(p); }
 const uint64_t SEED = chrono::steady_clock::now().time_since_epoch().count() * (random_address() | 1);
 mt19937_64 rng(SEED);
 
-uint64_t compute_hash(const vector<int> &result) {
+template<typename T>
+uint64_t compute_hash(const vector<T> &result) {
     uint64_t hash = 0;
 
-    for (int x : result)
+    for (const T &x : result)
         hash = 123456789 * hash + x;
 
     return hash;
@@ -121,16 +122,16 @@ int main(int argc, char **argv) {
         a = rng() % A_MAX;
 
     long double begin;
-    vector<int> result;
+    vector<unsigned> result;
 
     begin = clock();
-    result = compress_array(A);
+    result = compress_array<unsigned>(A);
     cerr << (clock() - begin) / CLOCKS_PER_SEC << 's' << endl;
     uint64_t hash0 = compute_hash(result);
     cerr << "hash = " << hash0 << endl;
 
     begin = clock();
-    result = compress_array_binary_search(A);
+    result = compress_array_binary_search<unsigned>(A);
     cerr << (clock() - begin) / CLOCKS_PER_SEC << 's' << endl;
     uint64_t hash1 = compute_hash(result);
     cerr << "hash = " << hash1 << endl;

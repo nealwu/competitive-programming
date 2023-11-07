@@ -14,7 +14,7 @@ struct identity_extract {
 
 // A stable sort that sorts in passes of `bits_per_pass` bits at a time.
 template<typename T, typename T_extract_key = identity_extract>
-void radix_sort(vector<T> &data, int bits_per_pass = 10, const T_extract_key &extract_key = identity_extract()) {
+void radix_sort(vector<T> &data, const T_extract_key &extract_key = identity_extract(), int bits_per_pass = 10) {
     if (int64_t(data.size()) * (64 - __builtin_clzll(data.size())) < 2 * (1 << bits_per_pass)) {
         stable_sort(data.begin(), data.end(), [&](const T &a, const T &b) -> bool {
             return extract_key(a) < extract_key(b);
@@ -660,7 +660,7 @@ void test_struct_sort(int64_t minimum, int64_t maximum) {
     for (int rep = 0; rep < REPS; rep++) {
         // shuffle(data.begin(), data.end(), rng);
         begin = clock();
-        radix_sort(data, 10, [&](const stuff &s) {
+        radix_sort(data, [&](const stuff &s) {
             return s.y;
         });
         elapsed += (clock() - begin) / CLOCKS_PER_SEC;
