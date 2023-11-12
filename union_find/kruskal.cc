@@ -15,7 +15,7 @@ struct union_find {
     }
 
     void init(int n) {
-        data.assign(n + 1, -1);
+        data.assign(n, -1);
         components = n;
     }
 

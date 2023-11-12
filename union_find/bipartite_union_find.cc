@@ -6,10 +6,10 @@
 using namespace std;
 
 struct bipartite_union_find {
-    vector<int> parent;
-    vector<int> size;
-    vector<bool> bipartite;
-    vector<bool> edge_parity;
+    // When data[x] < 0, x is a root and -data[x] is its tree size. When data[x] >= 0, data[x] is x's parent.
+    vector<int> data;
+    vector<bool> bipartite;  // whether the component rooted at x is bipartite
+    vector<bool> edge_parity;  // the parity of the edge x -- parent[x]
     int components = 0;
 
     bipartite_union_find(int n = -1) {
@@ -18,21 +18,23 @@ struct bipartite_union_find {
     }
 
     void init(int n) {
-        parent.resize(n + 1);
-        iota(parent.begin(), parent.end(), 0);
-        size.assign(n + 1, 1);
-        bipartite.assign(n + 1, true);
-        edge_parity.assign(n + 1, false);
+        data.assign(n, -1);
+        bipartite.assign(n, true);
+        edge_parity.assign(n, false);
         components = n;
     }
 
     int find(int x) {
-        if (x == parent[x])
+        if (data[x] < 0)
             return x;
 
-        int root = find(parent[x]);
-        edge_parity[x] = edge_parity[x] ^ edge_parity[parent[x]];
-        return parent[x] = root;
+        int root = find(data[x]);
+        edge_parity[x] = edge_parity[x] ^ edge_parity[data[x]];
+        return data[x] = root;
+    }
+
+    int get_size(int x) {
+        return -data[find(x)];
     }
 
     // Returns true if x and y are in the same component.
@@ -42,7 +44,8 @@ struct bipartite_union_find {
 
     // Returns the parity status between x and y (0 = same, 1 = different). Requires them to be in the same component.
     bool query_parity(int x, int y) {
-        assert(query_component(x, y));
+        bool same_component = query_component(x, y);
+        assert(same_component);
         return edge_parity[x] ^ edge_parity[y];
     }
 
@@ -50,24 +53,24 @@ struct bipartite_union_find {
     pair<bool, bool> unite(int x, int y, bool different = true) {
         int x_root = find(x);
         int y_root = find(y);
+        bool root_parity = edge_parity[x] ^ edge_parity[y] ^ different;
 
         if (x_root == y_root) {
-            bool consistent = !(edge_parity[x] ^ edge_parity[y] ^ different);
+            bool consistent = !root_parity;
             bipartite[x_root] = bipartite[x_root] && consistent;
             return {false, consistent};
         }
 
-        bool needed_parity = edge_parity[x] ^ edge_parity[y] ^ different;
         x = x_root;
         y = y_root;
 
-        if (size[x] < size[y])
+        if (-data[x] < -data[y])
             swap(x, y);
 
-        parent[y] = x;
-        size[x] += size[y];
+        data[x] += data[y];
+        data[y] = x;
         bipartite[x] = bipartite[x] && bipartite[y];
-        edge_parity[y] = needed_parity;
+        edge_parity[y] = root_parity;
         components--;
         return {true, true};
     }
@@ -97,6 +100,8 @@ int main() {
     for (int q = 0; q < Q; q++) {
         int type, a, b;
         cin >> type >> a >> b;
+        assert(1 <= min(a, b) && max(a, b) <= N);
+        a--; b--;
 
         if (type == 1) {
             bool same_component = UF.query_component(a, b);
@@ -106,10 +111,17 @@ int main() {
             else
                 cout << same_component << '\n';
         } else if (type == 2) {
-            pair<bool, bool> result = UF.unite(a, b);
+            int e;
+            cin >> e;
+            pair<bool, bool> result = UF.unite(a, b, e);
             cout << result.first << ' ' << result.second << '\n';
         } else {
             assert(false);
         }
     }
+
+    for (int i = 0; i < N; i++)
+        cout << UF.bipartite[UF.find(i)];
+
+    cout << '\n';
 }

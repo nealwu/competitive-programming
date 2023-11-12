@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <cassert>
 #include <iostream>
 #include <numeric>
 #include <vector>
@@ -14,9 +16,9 @@ struct union_find {
     }
 
     void init(int n) {
-        parent.resize(n + 1);
+        parent.resize(n);
         iota(parent.begin(), parent.end(), 0);
-        size.assign(n + 1, 1);
+        size.assign(n, 1);
         components = n;
     }
 
@@ -34,8 +36,8 @@ struct union_find {
         if (size[x] < size[y])
             swap(x, y);
 
-        parent[y] = x;
         size[x] += size[y];
+        parent[y] = x;
         components--;
         return true;
     }
@@ -55,6 +57,8 @@ int main() {
     for (int q = 0; q < Q; q++) {
         int type, a, b;
         cin >> type >> a >> b;
+        assert(1 <= min(a, b) && max(a, b) <= N);
+        a--; b--;
 
         if (type == 1)
             cout << (UF.find(a) == UF.find(b)) << '\n';
