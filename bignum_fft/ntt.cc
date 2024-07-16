@@ -374,6 +374,36 @@ struct NTT {
             return mod_multiply(left, right);
         })(0, int(polynomials.size()));
     }
+
+    // Multiples 2D polynomials (i.e., polynomials in two variables) efficiently.
+    template<typename T>
+    vector<vector<T>> mod_multiply_2d(const vector<vector<T>> &_left, const vector<vector<T>> &_right) {
+        if (_left.empty() || _right.empty())
+            return {};
+
+        int left_n = int(_left.size()), left_m = int(_left[0].size());
+        int right_n = int(_right.size()), right_m = int(_right[0].size());
+        int n = left_n + right_n - 1, m = left_m + right_m - 1;
+        vector<T> left(left_n * m, 0);
+        vector<T> right(right_n * m, 0);
+
+        for (int i = 0; i < left_n; i++)
+            for (int j = 0; j < left_m; j++)
+                left[i * m + j] = _left[i][j];
+
+        for (int i = 0; i < right_n; i++)
+            for (int j = 0; j < right_m; j++)
+                right[i * m + j] = _right[i][j];
+
+        vector<T> result = mod_multiply(left, right);
+        vector<vector<T>> result_2d(n, vector<T>(m, 0));
+
+        for (int i = 0; i < n; i++)
+            for (int j = 0; j < m; j++)
+                result_2d[i][j] = result[i * m + j];
+
+        return result_2d;
+    }
 };
 
 NTT<MOD> ntt;
@@ -469,11 +499,23 @@ namespace multi_ntt {
     }
 }
 
+
+
+void test_mod_multiply_2d() {
+    vector<vector<int>> left = {{1, 2, 3}, {4, 5, 6}};
+    vector<vector<int>> right = {{7, 8}, {9, 10}, {11, 12}, {13, 14}};
+    vector<vector<int>> expected = {{7, 22, 37, 24}, {37, 95, 129, 78}, {47, 119, 161, 96}, {57, 143, 193, 114}, {52, 121, 148, 84}};
+    assert(ntt.mod_multiply_2d(left, right) == expected);
+    assert(ntt.mod_multiply_2d(right, left) == expected);
+}
+
 int main() {
     ios::sync_with_stdio(false);
 #ifndef NEAL_DEBUG
     cin.tie(nullptr);
 #endif
+
+    test_mod_multiply_2d();
 
     string task;
     cin >> task;
