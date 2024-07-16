@@ -89,7 +89,7 @@ struct grid_bfs {
                 }
             }
 
-            swap(q, next_q);
+            q.swap(next_q);
             level++;
         }
     }

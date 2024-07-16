@@ -269,6 +269,7 @@ struct string_hash {
     }
 
     uint64_t _reverse_single_hash(int h, int start, int end) const {
+        assert(BUILD_REVERSE);
         // Convert everything to `uint64_t` for speed. Note: we add hash_pow[length] to fix strings that start with 0.
         uint64_t power = uint64_t(hash_pow[h][end - start]);
         return (power + uint64_t(_inv_prefix[h][end]) * power + HASH_P - uint64_t(_inv_prefix[h][start])) % HASH_P;

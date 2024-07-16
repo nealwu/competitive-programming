@@ -98,6 +98,15 @@ struct two_sat {
     vector<bool> assignment;
     SCC scc;
 
+    two_sat(int _n = 0) {
+        init(_n);
+    }
+
+    void init(int _n) {
+        n = _n;
+        adj.assign(2 * n, {});
+    }
+
     int inv(int var) {
         return var ^ 1;
     }

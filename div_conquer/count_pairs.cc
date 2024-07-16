@@ -42,6 +42,7 @@ int64_t count_pairs(T_array values, T_compare &&compare) {
     })(0, int(values.size()));
 }
 
+
 int main() {
     ios::sync_with_stdio(false);
 #ifndef NEAL_DEBUG

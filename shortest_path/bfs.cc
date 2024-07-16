@@ -76,7 +76,7 @@ struct BFS {
                     bfs_check(q, next_q, e.node, top, dist[top] + e.weight, e.weight);
             }
 
-            swap(q, next_q);
+            q.swap(next_q);
             level++;
         }
     }

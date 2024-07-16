@@ -43,7 +43,7 @@ struct xor_basis {
             k--;
         }
 
-        // Remove the highest bit of x from other basis elements.
+        // Optional: remove the highest bit of x from other basis elements.
         // TODO: this can be removed for speed if desired.
         for (int i = k - 1; i >= 0; i--)
             basis[i] = min(basis[i], basis[i] ^ x);

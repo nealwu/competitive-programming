@@ -96,6 +96,7 @@ struct biconnected_components {
             if (e.index == parent_edge)
                 continue;
 
+            // A self-loop is its own biconnected component.
             if (e.node == node) {
                 create_component(-1, {e.index});
                 continue;
