@@ -201,7 +201,7 @@ struct centroid_decomposition {
             found = false;
 
             for (edge &e : adj[root])
-                if (subtree_size[e.node] < subtree_size[root] && 2 * subtree_size[e.node] >= n) {
+                if (subtree_size[e.node] <= subtree_size[root] && 2 * subtree_size[e.node] >= n) {
                     root = e.node;
                     found = true;
                     break;
