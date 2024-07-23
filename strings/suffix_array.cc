@@ -75,7 +75,7 @@ struct suffix_array {
 
         // Sort each suffix by the first character.
         if (large_alphabet) {
-            sort(suffix.begin(), suffix.end(), [&](int a, int b) {
+            sort(suffix.begin(), suffix.end(), [&](int a, int b) -> bool {
                 return str[a] < str[b];
             });
         } else {
@@ -205,6 +205,39 @@ struct suffix_array {
             return a + common >= n ? -1 : 1;
 
         return str[a + common] < str[b + common] ? -1 : (str[a + common] == str[b + common] ? 0 : 1);
+    }
+
+    // Returns the range of suffix ranks that matches `qry` exactly at the beginning of the suffix.
+    // range[1] - range[0] is the number of times `qry` appears within `str`.
+    array<int, 2> equal_range(const T_string &qry) const {
+        int len = int(qry.size());
+        int low = 0, high = n;
+
+        while (low < high) {
+            int mid = low + (high - low) / 2;
+            int index = suffix[mid];
+
+            if (lexicographical_compare(str.begin() + index, str.begin() + min(index + len, n), qry.begin(), qry.end()))
+                low = mid + 1;
+            else
+                high = mid;
+        }
+
+        int start = low;
+        high = n;
+
+        while (low < high) {
+            int mid = low + (high - low) / 2;
+            int index = suffix[mid];
+
+            if (lexicographical_compare(qry.begin(), qry.end(), str.begin() + index, str.begin() + min(index + len, n)))
+                high = mid;
+            else
+                low = mid + 1;
+        }
+
+        int end = low;
+        return {start, end};
     }
 };
 

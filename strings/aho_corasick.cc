@@ -91,7 +91,7 @@ struct aho_corasick {
         W = int(words.size());
         vector<int> indices(W);
         iota(indices.begin(), indices.end(), 0);
-        stable_sort(indices.begin(), indices.end(), [&](int a, int b) {
+        stable_sort(indices.begin(), indices.end(), [&](int a, int b) -> bool {
             return words[a] < words[b];
         });
         word_location.assign(W, 0);

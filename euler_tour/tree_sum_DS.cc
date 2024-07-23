@@ -124,7 +124,7 @@ struct LCA {
         }
 
         // Heavy-light subtree reordering.
-        sort(adj[node].begin(), adj[node].end(), [&](int a, int b) {
+        sort(adj[node].begin(), adj[node].end(), [&](int a, int b) -> bool {
             return subtree_size[a] > subtree_size[b];
         });
     }

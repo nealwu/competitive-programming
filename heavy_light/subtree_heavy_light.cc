@@ -335,7 +335,7 @@ struct subtree_heavy_light {
         }
 
         // Heavy-light subtree reordering.
-        sort(adj[node].begin(), adj[node].end(), [&](int a, int b) {
+        sort(adj[node].begin(), adj[node].end(), [&](int a, int b) -> bool {
             return subtree_size[a] > subtree_size[b];
         });
     }
@@ -398,13 +398,13 @@ struct subtree_heavy_light {
     }
 
     int get_lca(int u, int v) {
-        return process_path(u, v, [&](seg_tree &, int, int){});
+        return process_path(u, v, [&](seg_tree &, int, int) -> void {});
     }
 
     segment query_path(int u, int v) {
         segment answer;
 
-        process_path(u, v, [&](seg_tree &tree, int a, int b) {
+        process_path(u, v, [&](seg_tree &tree, int a, int b) -> void {
             answer.join(tree.query(a, b));
         });
 
@@ -412,7 +412,7 @@ struct subtree_heavy_light {
     }
 
     void update_path(int u, int v, const segment_change &change) {
-        process_path(u, v, [&](seg_tree &tree, int a, int b) {
+        process_path(u, v, [&](seg_tree &tree, int a, int b) -> void {
             tree.update(a, b, change);
         });
     }

@@ -642,7 +642,7 @@ void test_struct_sort(int64_t minimum, int64_t maximum) {
     for (int rep = 0; rep < REPS; rep++) {
         // shuffle(data.begin(), data.end(), rng);
         begin = clock();
-        ska_sort(data.begin(), data.end(), [&](const stuff &s) {
+        ska_sort(data.begin(), data.end(), [&](const stuff &s) -> int64_t {
             return s.y;
         });
         elapsed += (clock() - begin) / CLOCKS_PER_SEC;
@@ -660,7 +660,7 @@ void test_struct_sort(int64_t minimum, int64_t maximum) {
     for (int rep = 0; rep < REPS; rep++) {
         // shuffle(data.begin(), data.end(), rng);
         begin = clock();
-        radix_sort(data, [&](const stuff &s) {
+        radix_sort(data, [&](const stuff &s) -> int64_t {
             return s.y;
         });
         elapsed += (clock() - begin) / CLOCKS_PER_SEC;

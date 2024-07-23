@@ -143,7 +143,7 @@ struct weighted_LCA {
         }
 
         // Heavy-light subtree reordering.
-        sort(adj[node].begin(), adj[node].end(), [&](const edge &a, const edge &b) {
+        sort(adj[node].begin(), adj[node].end(), [&](const edge &a, const edge &b) -> bool {
             return subtree_size[a.node] > subtree_size[b.node];
         });
     }

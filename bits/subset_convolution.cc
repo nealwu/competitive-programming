@@ -109,7 +109,7 @@ vector<T_out> subset_convolution(const vector<T_in> &A, const vector<T_in> &B) {
         if (c > 1)
             FC = mobius_transform<T_out>(FC);
 
-        iterate_bitmasks_with_popcount(n, c, [&](int mask) {
+        iterate_bitmasks_with_popcount(n, c, [&](int mask) -> void {
             C[mask] = FC[mask];
         });
     }
