@@ -207,7 +207,7 @@ struct suffix_array {
         return str[a + common] < str[b + common] ? -1 : (str[a + common] == str[b + common] ? 0 : 1);
     }
 
-    // Returns the range of suffix ranks that matches `qry` exactly at the beginning of the suffix.
+    // Returns the range of suffix ranks that match `qry` exactly at the beginning of the suffix.
     // range[1] - range[0] is the number of times `qry` appears within `str`.
     array<int, 2> equal_range(const T_string &qry) const {
         int len = int(qry.size());
