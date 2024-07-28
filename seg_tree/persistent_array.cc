@@ -29,11 +29,11 @@ struct persistent_array {
 
     // Directly assigning `tree[position] = f(...)` results in segmentation faults, because the address for
     // `tree[position]` can be computed before calling `f()`, which may reallocate `tree`.
-    void set_children(int position, int left, int right) { tree[position] = {left, right}; }
-    void set_left(int position, int left) { tree[position][0] = left; }
-    void set_right(int position, int right) { tree[position][1] = right; }
+    void _set_children(int position, int left, int right) { tree[position] = {left, right}; }
+    void _set_left(int position, int left) { tree[position][0] = left; }
+    void _set_right(int position, int right) { tree[position][1] = right; }
 
-    int build_tree(int start, int end) {
+    int _build_tree(int start, int end) {
         if (start >= end)
             return -1;
 
@@ -42,12 +42,12 @@ struct persistent_array {
 
         // At leaves, we set `tree[node]` to point to the appropriate index in `values`.
         if (end - start == 1) {
-            set_children(node, start, start);
+            _set_children(node, start, start);
             return node;
         }
 
         int mid = (start + end) / 2;
-        set_children(node, build_tree(start, mid), build_tree(mid, end));
+        _set_children(node, _build_tree(start, mid), _build_tree(mid, end));
         return node;
     }
 
@@ -66,7 +66,7 @@ struct persistent_array {
             values.reserve(value_reserve_size);
         }
 
-        build_tree(0, tree_n);
+        _build_tree(0, tree_n);
     }
 
     T get(int root, int index) const {
@@ -90,20 +90,20 @@ struct persistent_array {
         return values[tree[current][0]];
     }
 
-    int make_copy(int position) {
+    int _make_copy(int position) {
         assert(0 <= position && position < int(tree.size()));
         tree.push_back(tree[position]);
         assert(int(tree.size()) <= tree_reserve_size);
         return int(tree.size()) - 1;
     }
 
-    int update_tree(int position, int start, int end, int index, T value) {
+    int _update_tree(int position, int start, int end, int index, T value) {
         assert(start < end);
-        position = make_copy(position);
+        position = _make_copy(position);
 
         if (end - start == 1) {
             assert(start == index);
-            set_children(position, int(values.size()), int(values.size()));
+            _set_children(position, int(values.size()), int(values.size()));
             values.push_back(value);
             assert(int(values.size()) <= value_reserve_size);
             return position;
@@ -112,16 +112,16 @@ struct persistent_array {
         int mid = (start + end) / 2;
 
         if (index < mid)
-            set_left(position, update_tree(tree[position][0], start, mid, index, value));
+            _set_left(position, _update_tree(tree[position][0], start, mid, index, value));
         else
-            set_right(position, update_tree(tree[position][1], mid, end, index, value));
+            _set_right(position, _update_tree(tree[position][1], mid, end, index, value));
 
         return position;
     }
 
     int update(int root, int index, T value) {
         assert(root > 0 && 0 <= index && index < tree_n);
-        return update_tree(root, 0, tree_n, index, value);
+        return _update_tree(root, 0, tree_n, index, value);
     }
 };
 

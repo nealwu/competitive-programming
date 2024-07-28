@@ -156,14 +156,14 @@ struct persistent_seg_tree {
             seg(position).join(seg(left(position)), seg(right(position)));
     }
 
-    int make_copy(int position) {
+    int _make_copy(int position) {
         assert(0 <= position && position < int(tree.size()));
         tree.push_back(tree[position]);
         assert(int(tree.size()) <= reserve_size);
         return int(tree.size()) - 1;
     }
 
-    void push_down(int position, int length) {
+    void _push_down(int position, int length) {
         if (!change(position).has_change())
             return;
 
@@ -198,14 +198,14 @@ struct persistent_seg_tree {
         return answer;
     }
 
-    // Directly assigning `tree[position].left = make_copy(left(position))` results in segmentation faults, because the
-    // address for `tree[position]` can be computed before calling `make_copy`, which may reallocate `tree`.
-    void set_left(int position, int result) { tree[position].left = result; }
-    void set_right(int position, int result) { tree[position].right = result; }
+    // Directly assigning `tree[position].left = _make_copy(left(position))` results in segmentation faults, because the
+    // address for `tree[position]` can be computed before calling `_make_copy`, which may reallocate `tree`.
+    void _set_left(int position, int result) { tree[position].left = result; }
+    void _set_right(int position, int result) { tree[position].right = result; }
 
     int _update_tree(int position, int start, int end, int a, int b, const segment_change &request, bool needs_copy) {
         if (needs_copy)
-            position = make_copy(position);
+            position = _make_copy(position);
 
         if (a <= start && end <= b) {
             seg(position).apply(end - start, request);
@@ -219,14 +219,14 @@ struct persistent_seg_tree {
         int mid = (start + end) / 2;
 
         if (LAZY_PROPAGATION) {
-            set_left(position, make_copy(left(position)));
-            set_right(position, make_copy(right(position)));
-            push_down(position, end - start);
+            _set_left(position, _make_copy(left(position)));
+            _set_right(position, _make_copy(right(position)));
+            _push_down(position, end - start);
             needs_copy = false;
         }
 
-        if (a < mid) set_left(position, _update_tree(left(position), start, mid, a, b, request, needs_copy));
-        if (b > mid) set_right(position, _update_tree(right(position), mid, end, a, b, request, needs_copy));
+        if (a < mid) _set_left(position, _update_tree(left(position), start, mid, a, b, request, needs_copy));
+        if (b > mid) _set_right(position, _update_tree(right(position), mid, end, a, b, request, needs_copy));
         seg(position).join(seg(left(position)), seg(right(position)));
         return position;
     }
@@ -253,7 +253,7 @@ struct persistent_seg_tree {
             new_level.reserve(2 * level.size());
 
             for (int x : level) {
-                push_down(x, length);
+                _push_down(x, length);
                 new_level.push_back(left(x));
                 new_level.push_back(right(x));
             }

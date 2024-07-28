@@ -110,63 +110,63 @@ struct seg_tree {
             tree[position].join(tree[2 * position], tree[2 * position + 1]);
     }
 
-    void apply_and_combine(int position, int length, const segment_change &change) {
+    void _apply_and_combine(int position, int length, const segment_change &change) {
         tree[position].apply(length, change);
 
         if (position < tree_n)
             changes[position] = changes[position].combine(change);
     }
 
-    void push_down(int position, int length) {
+    void _push_down(int position, int length) {
         if (changes[position].has_change()) {
-            apply_and_combine(2 * position, length / 2, changes[position]);
-            apply_and_combine(2 * position + 1, length / 2, changes[position]);
+            _apply_and_combine(2 * position, length / 2, changes[position]);
+            _apply_and_combine(2 * position + 1, length / 2, changes[position]);
             changes[position] = segment_change();
         }
     }
 
-    // Calls push_down for all necessary nodes in order to query the range [a, b).
-    void push_all(int a, int b) {
+    // Calls `_push_down` for all necessary nodes in order to query the range [a, b).
+    void _push_all(int a, int b) {
         assert(0 <= a && a < b && b <= tree_n);
         a += tree_n;
         b += tree_n - 1;
         int last = max(highest_bit(a ^ b), 0);
 
         for (int up = highest_bit(tree_n); up > last; up--)
-            push_down(a >> up, 1 << up);
+            _push_down(a >> up, 1 << up);
 
         for (int up = last; up > 0; up--) {
-            push_down(a >> up, 1 << up);
-            push_down(b >> up, 1 << up);
+            _push_down(a >> up, 1 << up);
+            _push_down(b >> up, 1 << up);
         }
     }
 
-    void join_and_apply(int position, int length) {
+    void _join_and_apply(int position, int length) {
         tree[position].join(tree[2 * position], tree[2 * position + 1]);
         tree[position].apply(length, changes[position]);
     }
 
-    // Calls join_and_apply for all necessary nodes after updating the range [a, b).
-    void join_all(int a, int b) {
+    // Calls `_join_and_apply` for all necessary nodes after updating the range [a, b).
+    void _join_all(int a, int b) {
         assert(0 <= a && a < b && b <= tree_n);
         a += tree_n;
         b += tree_n - 1;
         int last = max(highest_bit(a ^ b), 0);
 
         for (int up = 1; up <= last; up++) {
-            join_and_apply(a >> up, 1 << up);
-            join_and_apply(b >> up, 1 << up);
+            _join_and_apply(a >> up, 1 << up);
+            _join_and_apply(b >> up, 1 << up);
         }
 
         for (int up = last + 1; up <= highest_bit(tree_n); up++)
-            join_and_apply(a >> up, 1 << up);
+            _join_and_apply(a >> up, 1 << up);
     }
 
     template<typename T_range_op>
-    void process_range(int a, int b, bool needs_join, T_range_op &&range_op) {
+    void _process_range(int a, int b, bool needs_join, T_range_op &&range_op) {
         assert(0 <= a && a <= b && b <= tree_n);
         if (a == b) return;
-        push_all(a, b);
+        _push_all(a, b);
         int original_a = a, original_b = b;
         a += tree_n;
         b += tree_n;
@@ -186,13 +186,13 @@ struct seg_tree {
         }
 
         if (needs_join)
-            join_all(original_a, original_b);
+            _join_all(original_a, original_b);
     }
 
     segment query(int a, int b) {
         segment answer;
 
-        process_range(a, b, false, [&](int position, int) -> bool {
+        _process_range(a, b, false, [&](int position, int) -> bool {
             answer.join(tree[position]);
             return false;
         });
@@ -209,14 +209,14 @@ struct seg_tree {
         int position = tree_n + index;
 
         for (int up = highest_bit(tree_n); up > 0; up--)
-            push_down(position >> up, 1 << up);
+            _push_down(position >> up, 1 << up);
 
         return tree[position];
     }
 
     void update(int a, int b, const segment_change &change) {
-        process_range(a, b, true, [&](int position, int length) -> bool {
-            apply_and_combine(position, length, change);
+        _process_range(a, b, true, [&](int position, int length) -> bool {
+            _apply_and_combine(position, length, change);
             return false;
         });
     }
@@ -226,7 +226,7 @@ struct seg_tree {
         int position = tree_n + index;
 
         for (int up = highest_bit(tree_n); up > 0; up--)
-            push_down(position >> up, 1 << up);
+            _push_down(position >> up, 1 << up);
 
         tree[position] = seg;
 
@@ -238,7 +238,7 @@ struct seg_tree {
 
     vector<segment> to_array(int n) {
         for (int i = 1; i < tree_n; i++)
-            push_down(i, tree_n >> highest_bit(i));
+            _push_down(i, tree_n >> highest_bit(i));
 
         return vector<segment>(tree.begin() + tree_n, tree.begin() + tree_n + n);
     }
@@ -256,7 +256,7 @@ struct seg_tree {
         int node = -1;
 
         // Try to build the range [first, n); when a node fails, search down instead.
-        process_range(first, n, false, [&](int position, int) -> bool {
+        _process_range(first, n, false, [&](int position, int) -> bool {
             if (should_join(current, tree[position])) {
                 current.join(tree[position]);
                 return false;
@@ -270,7 +270,7 @@ struct seg_tree {
             return n;
 
         while (node < tree_n) {
-            push_down(node, tree_n >> highest_bit(node));
+            _push_down(node, tree_n >> highest_bit(node));
 
             if (should_join(current, tree[2 * node])) {
                 current.join(tree[2 * node]);

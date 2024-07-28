@@ -140,7 +140,7 @@ struct persistent_basic_seg_tree {
             seg(position).join(seg(left(position)), seg(right(position)));
     }
 
-    int make_copy(int position) {
+    int _make_copy(int position) {
         assert(0 <= position && position < int(tree.size()));
         tree.push_back(tree[position]);
         assert(int(tree.size()) <= reserve_size);
@@ -168,14 +168,14 @@ struct persistent_basic_seg_tree {
         return answer;
     }
 
-    // Directly assigning `tree[position].left = make_copy(left(position))` results in segmentation faults, because the
-    // address for `tree[position]` can be computed before calling `make_copy`, which may reallocate `tree`.
-    void set_left(int position, int result) { tree[position].left = result; }
-    void set_right(int position, int result) { tree[position].right = result; }
+    // Directly assigning `tree[position].left = _make_copy(left(position))` results in segmentation faults, because the
+    // address for `tree[position]` can be computed before calling `_make_copy`, which may reallocate `tree`.
+    void _set_left(int position, int result) { tree[position].left = result; }
+    void _set_right(int position, int result) { tree[position].right = result; }
 
     template<typename T_range_op>
     int _update_tree(int position, int start, int end, int index, T_range_op &&range_op) {
-        position = make_copy(position);
+        position = _make_copy(position);
 
         if (end - start == 1 && start == index) {
             range_op(position, end - start);
@@ -188,9 +188,9 @@ struct persistent_basic_seg_tree {
         int mid = (start + end) / 2;
 
         if (index < mid)
-            set_left(position, _update_tree(left(position), start, mid, index, range_op));
+            _set_left(position, _update_tree(left(position), start, mid, index, range_op));
         else
-            set_right(position, _update_tree(right(position), mid, end, index, range_op));
+            _set_right(position, _update_tree(right(position), mid, end, index, range_op));
 
         seg(position).join(seg(left(position)), seg(right(position)));
         return position;

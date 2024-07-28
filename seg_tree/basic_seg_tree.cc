@@ -122,7 +122,7 @@ struct basic_seg_tree {
     }
 
     template<typename T_range_op>
-    void process_range(int a, int b, T_range_op &&range_op) const {
+    void _process_range(int a, int b, T_range_op &&range_op) const {
         assert(0 <= a && a <= b && b <= tree_n);
         a += tree_n;
         b += tree_n;
@@ -145,7 +145,7 @@ struct basic_seg_tree {
     segment query(int a, int b) const {
         segment answer;
 
-        process_range(a, b, [&](int position) -> bool {
+        _process_range(a, b, [&](int position) -> bool {
             answer.join(tree[position]);
             return false;
         });
@@ -163,7 +163,7 @@ struct basic_seg_tree {
         return tree[tree_n + index];
     }
 
-    void join_up(int position) {
+    void _join_up(int position) {
         while (position > 1) {
             position /= 2;
             tree[position].join(tree[2 * position], tree[2 * position + 1]);
@@ -174,14 +174,14 @@ struct basic_seg_tree {
         assert(0 <= index && index < tree_n);
         int position = tree_n + index;
         tree[position].apply(change);
-        join_up(position);
+        _join_up(position);
     }
 
     void set(int index, const segment &seg) {
         assert(0 <= index && index < tree_n);
         int position = tree_n + index;
         tree[position] = seg;
-        join_up(position);
+        _join_up(position);
     }
 
     // Finds the end of the last subarray starting at `first` satisfying `should_join` via binary search in O(log n).
@@ -198,7 +198,7 @@ struct basic_seg_tree {
 
         // Try to build the range [first, tree_n); when a node fails, search down instead.
         // We use the range [first, tree_n) instead of [first, n) for a boost in speed.
-        process_range(first, tree_n, [&](int position) -> bool {
+        _process_range(first, tree_n, [&](int position) -> bool {
             if (should_join(current, tree[position])) {
                 current.join(tree[position]);
                 return false;
