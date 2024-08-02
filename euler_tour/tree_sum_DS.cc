@@ -10,7 +10,7 @@ using namespace std;
 #include <ext/pb_ds/assoc_container.hpp>
 using namespace __gnu_pbds;
 
-// Warning: this uses nearly 170 MB for N = 500,000. If low on memory use memory_rmq_lca.cc or block_rmq_lca.cc instead
+// Warning: LCA uses nearly 170 MB for N = 500,000. If low on memory use memory_rmq_lca.cc or block_rmq_lca.cc instead.
 template<typename T, bool maximum_mode = false>
 struct RMQ {
     static int highest_bit(unsigned x) {
@@ -68,7 +68,7 @@ struct LCA {
     vector<int> tour_start, tour_end;
     vector<int> tour_list, rev_tour_list;
     vector<int> heavy_root;
-    vector<int> heavy_root_depth, heavy_root_parent;  // These two vectors serve purely to optimize get_kth_ancestor
+    vector<int> heavy_root_depth, heavy_root_parent;  // These two vectors serve purely to optimize `get_kth_ancestor`.
     RMQ<int> rmq;
     bool built = false;
 
@@ -148,7 +148,7 @@ struct LCA {
         tour_end[node] = tour;
     }
 
-    void build(vector<int> roots = {}, bool build_rmq = true) {
+    void build(const vector<int> &roots = {}, bool build_rmq = true) {
         depth.assign(n, -1);
 
         for (int root : roots)
@@ -261,7 +261,7 @@ struct LCA {
         while (heavy_root_depth[a] > goal)
             a = heavy_root_parent[a];
 
-        return tour_list[tour_start[a] + goal - depth[a]];
+        return tour_list[tour_start[a] - (depth[a] - goal)];
     }
 
     int get_kth_node_on_path(int a, int b, int k) const {
@@ -281,16 +281,13 @@ struct LCA {
     // Note: this is the LCA of any two nodes out of three when the third node is the root.
     // It is also the node with the minimum sum of distances to all three nodes (the centroid of the three nodes).
     int get_common_node(int a, int b, int c) const {
-        // Return the deepest node among lca(a, b), lca(b, c), and lca(c, a).
-        int x = get_lca(a, b);
-        int y = get_lca(b, c);
-        int z = get_lca(c, a);
-        return x ^ y ^ z;
+        // Returns the deepest of the three LCAs; this works because the shallowest two will always be the same.
+        return get_lca(a, b) ^ get_lca(b, c) ^ get_lca(c, a);
     }
 
     // Given a subset of k tree nodes, computes the minimal subtree that contains all the nodes (at most 2k - 1 nodes).
     // Returns a list of {node, parent} for every node in the subtree sorted by tour index. Runs in O(k log k).
-    // Note that all parents also appear as a node in the return value, and nodes[0].first is the compressed root.
+    // Note that all parents also appear as a node in the return value, and `nodes[0].first` is the compressed root.
     vector<pair<int, int>> compress_tree(vector<int> nodes) const {
         if (nodes.empty())
             return {};
@@ -298,6 +295,7 @@ struct LCA {
         auto compare_tour = [&](int a, int b) -> bool { return tour_start[a] < tour_start[b]; };
         sort(nodes.begin(), nodes.end(), compare_tour);
         int k = int(nodes.size());
+        nodes.reserve(2 * k - 1);
 
         for (int i = 0; i < k - 1; i++)
             nodes.push_back(get_lca(nodes[i], nodes[i + 1]));
@@ -305,10 +303,10 @@ struct LCA {
         sort(nodes.begin() + k, nodes.end(), compare_tour);
         inplace_merge(nodes.begin(), nodes.begin() + k, nodes.end(), compare_tour);
         nodes.erase(unique(nodes.begin(), nodes.end()), nodes.end());
-        vector<pair<int, int>> result = {{nodes[0], -1}};
+        vector<pair<int, int>> result(nodes.size());
 
-        for (int i = 1; i < int(nodes.size()); i++)
-            result.emplace_back(nodes[i], get_lca(nodes[i], nodes[i - 1]));
+        for (int i = 0; i < int(nodes.size()); i++)
+            result[i] = {nodes[i], i == 0 ? -1 : get_lca(nodes[i], nodes[i - 1])};
 
         return result;
     }
