@@ -511,6 +511,7 @@ struct splay_tree {
         return query_range(lower_bound(lower).second, lower_bound(upper).second);
     }
 
+    // Finds the end of the last subarray starting at `first` satisfying `should_join` via binary search.
     // should_join(splay_node *node, bool single_node) -> bool
     // Determines whether we should join with a node (if single_node then just the node, else the subtree).
     // If true, actually performs the join.

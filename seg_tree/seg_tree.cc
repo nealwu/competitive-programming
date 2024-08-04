@@ -216,20 +216,21 @@ struct seg_tree {
         return vector<segment>(tree.begin() + tree_n, tree.begin() + tree_n + n);
     }
 
-    // Finds the end of the last subarray starting at `first` satisfying `should_join` via binary search in O(log n).
+    // Finds the end of the last prefix of the subarray [a, b) satisfying `should_join` via binary search in O(log n).
+    // Return value will be between a - 1 and b, inclusive.
     template<typename T_bool>
-    int find_last_subarray(T_bool &&should_join, int n, int first = 0) {
-        assert(0 <= first && first <= n);
+    int find_last_subarray(T_bool &&should_join, int a, int b) {
+        assert(0 <= a && a <= b && b <= tree_n);
         segment current;
 
         // Check the degenerate case.
         if (!should_join(current, current))
-            return first - 1;
+            return a - 1;
 
         return y_combinator([&](auto search, int position, int start, int end) -> int {
-            if (end <= first) {
+            if (end <= a) {
                 return end;
-            } else if (first <= start && end <= n && should_join(current, tree[position])) {
+            } else if (a <= start && end <= b && should_join(current, tree[position])) {
                 current.join(tree[position]);
                 return end;
             } else if (end - start == 1) {
@@ -279,7 +280,7 @@ int main() {
 
             int index = tree.find_last_subarray([&](const segment &, const segment &add) -> bool {
                 return add.maximum < x;
-            }, N, a);
+            }, a, N);
 
             cout << (index < N ? index + 1 : -1) << '\n';
             continue;
@@ -289,7 +290,7 @@ int main() {
 
             int index = tree.find_last_subarray([&](const segment &current, const segment &add) -> bool {
                 return current.sum + add.sum < x;
-            }, N, a);
+            }, a, N);
 
             cout << (index < N ? index + 1 : -1) << '\n';
             continue;
