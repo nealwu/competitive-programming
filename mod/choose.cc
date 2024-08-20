@@ -160,12 +160,21 @@ using mod_int = _m_int<MOD>;
 template<const int &MOD>
 struct combinatorics {
     using combo_int = _m_int<MOD>;
+    // using combo_int = _b_int<MOD, barrett>;
 
-    vector<combo_int> _factorial = {1}, _inv_factorial = {1};
+    vector<combo_int> _factorial, _inv_factorial;
+    int64_t prepared_maximum;
+
+    combinatorics() {
+        init();
+    }
+
+    void init() {
+        _factorial = _inv_factorial = {1};
+        prepared_maximum = 0;
+    }
 
     void prepare_factorials(int64_t maximum) {
-        static int64_t prepared_maximum = 0;
-
         if (maximum <= prepared_maximum)
             return;
 
