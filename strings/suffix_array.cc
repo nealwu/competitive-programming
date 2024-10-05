@@ -239,6 +239,36 @@ struct suffix_array {
         int end = low;
         return {start, end};
     }
+
+    // Returns the range of suffix ranks that match the substring starting at `index` for at least `len`.
+    // range[1] - range[0] is the number of times the substring [index, index + len) appears within `str`.
+    array<int, 2> equal_range(int index, int len) const {
+        int low = 0, high = rank[index];
+
+        while (low < high) {
+            int mid = low + (high - low) / 2;
+
+            if (get_lcp_from_ranks(mid, rank[index]) >= len)
+                high = mid;
+            else
+                low = mid + 1;
+        }
+
+        int start = low;
+        low = rank[index]; high = n;
+
+        while (low < high) {
+            int mid = low + (high - low) / 2;
+
+            if (get_lcp_from_ranks(mid, rank[index]) >= len)
+                low = mid + 1;
+            else
+                high = mid;
+        }
+
+        int end = low;
+        return {start, end};
+    }
 };
 
 
@@ -266,6 +296,17 @@ int main() {
             cout << SA.lcp[i] << (i < N - 1 ? ' ' : '\n');
     } else if (task == "distinct_substrings") {
         cout << int64_t(N) * (N + 1) / 2 - accumulate(SA.lcp.begin(), SA.lcp.end(), 0LL) << '\n';
+    } else if (task == "substring_queries") {
+        int Q;
+        cin >> Q;
+
+        for (int q = 0; q < Q; q++) {
+            int L, R;
+            cin >> L >> R;
+            L--;
+            array<int, 2> range = SA.equal_range(L, R - L);
+            cout << range[0] << ' ' << range[1] << '\n';
+        }
     } else {
         assert(false);
     }
