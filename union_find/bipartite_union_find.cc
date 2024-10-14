@@ -54,15 +54,14 @@ struct bipartite_union_find {
         int x_root = find(x);
         int y_root = find(y);
         bool root_parity = edge_parity[x] ^ edge_parity[y] ^ different;
-
-        if (x_root == y_root) {
-            bool consistent = !root_parity;
-            bipartite[x_root] = bipartite[x_root] && consistent;
-            return {false, consistent};
-        }
-
         x = x_root;
         y = y_root;
+
+        if (x == y) {
+            bool consistent = !root_parity;
+            bipartite[x] = bipartite[x] && consistent;
+            return {false, consistent};
+        }
 
         if (-data[x] < -data[y])
             swap(x, y);
