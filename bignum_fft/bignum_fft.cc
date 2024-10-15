@@ -436,7 +436,7 @@ namespace FFT {
     }
 
     template<typename T>
-    vector<T> mod_power(const vector<T> &v, int exponent, const int mod, bool split) {
+    vector<T> mod_power(const vector<T> &v, int exponent, const int mod, bool split, int size_limit = INT32_MAX) {
         assert(exponent >= 0);
         vector<T> result = {1};
 
@@ -446,8 +446,15 @@ namespace FFT {
         for (int k = highest_bit(exponent); k >= 0; k--) {
             result = mod_multiply(result, result, mod, split);
 
-            if (exponent >> k & 1)
+            if (int(result.size()) > size_limit)
+                result.resize(size_limit);
+
+            if (exponent >> k & 1) {
                 result = mod_multiply(result, v, mod, split);
+
+                if (int(result.size()) > size_limit)
+                    result.resize(size_limit);
+            }
         }
 
         return result;

@@ -341,7 +341,7 @@ struct NTT {
     }
 
     template<typename T>
-    vector<T> mod_power(const vector<T> &v, int exponent) {
+    vector<T> mod_power(const vector<T> &v, int exponent, int size_limit = INT32_MAX) {
         assert(exponent >= 0);
         vector<T> result = {1};
 
@@ -351,8 +351,15 @@ struct NTT {
         for (int k = highest_bit(exponent); k >= 0; k--) {
             result = mod_multiply(result, result);
 
-            if (exponent >> k & 1)
+            if (int(result.size()) > size_limit)
+                result.resize(size_limit);
+
+            if (exponent >> k & 1) {
                 result = mod_multiply(result, v);
+
+                if (int(result.size()) > size_limit)
+                    result.resize(size_limit);
+            }
         }
 
         return result;
