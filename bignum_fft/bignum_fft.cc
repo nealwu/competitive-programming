@@ -70,8 +70,8 @@ namespace FFT {
     vector<complex<float_t>> roots = {{0, 0}, {1, 0}};
     vector<int> bit_reverse;
 
-    int highest_bit(unsigned x) {
-        return x == 0 ? -1 : 31 - __builtin_clz(x);
+    int highest_bit(uint64_t x) {
+        return x == 0 ? -1 : 63 - __builtin_clzll(x);
     }
 
     bool is_power_of_two(int n) {
@@ -436,7 +436,7 @@ namespace FFT {
     }
 
     template<typename T>
-    vector<T> mod_power(const vector<T> &v, int exponent, const int mod, bool split, int size_limit = INT32_MAX) {
+    vector<T> mod_power(const vector<T> &v, int64_t exponent, const int mod, bool split, int size_limit = INT32_MAX) {
         assert(exponent >= 0);
         vector<T> result = {1};
 

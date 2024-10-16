@@ -173,8 +173,8 @@ template<const int &MOD>
 struct NTT {
     using ntt_int = _m_int<MOD>;
 
-    static int highest_bit(unsigned x) {
-        return x == 0 ? -1 : 31 - __builtin_clz(x);
+    static int highest_bit(uint64_t x) {
+        return x == 0 ? -1 : 63 - __builtin_clzll(x);
     }
 
     static bool is_power_of_two(int n) {
@@ -341,7 +341,7 @@ struct NTT {
     }
 
     template<typename T>
-    vector<T> mod_power(const vector<T> &v, int exponent, int size_limit = INT32_MAX) {
+    vector<T> mod_power(const vector<T> &v, int64_t exponent, int size_limit = INT32_MAX) {
         assert(exponent >= 0);
         vector<T> result = {1};
 
