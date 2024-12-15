@@ -72,7 +72,7 @@ struct weighted_LCA {
     vector<T_weight> weighted_depth, up_weight;
     vector<int> euler, first_occurrence;
     vector<int> tour_start, tour_end;
-    vector<int> tour_list, rev_tour_list;
+    vector<int> tour_list;
     vector<int> heavy_root;
     vector<int> heavy_root_depth, heavy_root_parent;  // These two vectors serve purely to optimize `get_kth_ancestor`.
     RMQ<int> rmq;
@@ -208,8 +208,6 @@ struct weighted_LCA {
             heavy_root_parent[i] = parent[heavy_root[i]];
         }
 
-        rev_tour_list = tour_list;
-        reverse(rev_tour_list.begin(), rev_tour_list.end());
         built = true;
     }
 

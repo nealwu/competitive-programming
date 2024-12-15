@@ -42,7 +42,7 @@ template<typename Head, typename... Tail> void dbg_out(Head H, Tail... T) { cerr
 
 // Compresses the values in arr to be in the range [0, n).
 template<typename T_out = int, typename T>
-vector<T_out> compress_array(const vector<T> &arr) {
+pair<vector<T_out>, vector<T>> compress_array(const vector<T> &arr) {
     int n = int(arr.size());
     vector<pair<T, int>> sorted(n);
 
@@ -54,22 +54,25 @@ vector<T_out> compress_array(const vector<T> &arr) {
     });
 
     vector<T_out> compressed(n);
+    vector<T> sorted_values;
+    sorted_values.reserve(n);
     int current = 0;
 
     for (int i = 0, j = 0; i < n; i = j) {
         while (j < n && sorted[i].first == sorted[j].first)
             compressed[sorted[j++].second] = current;
 
+        sorted_values.push_back(sorted[i].first);
         current++;
     }
 
-    return compressed;
+    return {compressed, sorted_values};
 }
 
 
 // Compresses the values in arr to be in the range [0, n).
 template<typename T_out = int, typename T>
-vector<T_out> compress_array_binary_search(const vector<T> &arr) {
+pair<vector<T_out>, vector<T>> compress_array_binary_search(const vector<T> &arr) {
     int n = int(arr.size());
     vector<T> sorted = arr;
     sort(sorted.begin(), sorted.end());
@@ -79,7 +82,7 @@ vector<T_out> compress_array_binary_search(const vector<T> &arr) {
     for (int i = 0; i < n; i++)
         compressed[i] = int(lower_bound(sorted.begin(), sorted.end(), arr[i]) - sorted.begin());
 
-    return compressed;
+    return {compressed, sorted};
 }
 
 
@@ -88,11 +91,14 @@ uint64_t random_address() { char *p = new char; delete p; return uint64_t(p); }
 const uint64_t SEED = chrono::steady_clock::now().time_since_epoch().count() * (random_address() | 1);
 mt19937_64 rng(SEED);
 
-template<typename T>
-uint64_t compute_hash(const vector<T> &result) {
+template<typename T_out, typename T>
+uint64_t compute_hash(const pair<vector<T_out>, vector<T>> &result) {
     uint64_t hash = 0;
 
-    for (const T &x : result)
+    for (const T_out &x : result.first)
+        hash = 123456789 * hash + x;
+
+    for (const T &x : result.second)
         hash = 123456789 * hash + x;
 
     return hash;
@@ -123,7 +129,7 @@ int main(int argc, char **argv) {
         a = rng() % A_MAX;
 
     long double begin;
-    vector<unsigned> result;
+    pair<vector<unsigned>, vector<int64_t>> result;
 
     begin = clock();
     result = compress_array<unsigned>(A);
