@@ -68,7 +68,6 @@ namespace FFT {
     const float_t PI = acos(-ONE);
 
     vector<complex<float_t>> roots = {{0, 0}, {1, 0}};
-    vector<int> bit_reverse;
 
     int highest_bit(uint64_t x) {
         return x == 0 ? -1 : 63 - __builtin_clzll(x);
@@ -93,13 +92,12 @@ namespace FFT {
     // Rearranges the indices to be sorted by lowest bit first, then second lowest, etc., rather than highest bit first.
     // This makes even-odd div-conquer much easier.
     void bit_reorder(int n, vector<complex<float_t>> &values) {
-        if (int(bit_reverse.size()) != n) {
-            bit_reverse.assign(n, 0);
-            int length = get_length(n);
+        assert(is_power_of_two(n));
+        vector<int> bit_reverse(n, 0);
+        int length = get_length(n);
 
-            for (int i = 1; i < n; i++)
-                bit_reverse[i] = (bit_reverse[i >> 1] >> 1) | ((i & 1) << (length - 1));
-        }
+        for (int i = 1; i < n; i++)
+            bit_reverse[i] = (bit_reverse[i >> 1] >> 1) | ((i & 1) << (length - 1));
 
         for (int i = 0; i < n; i++)
             if (i < bit_reverse[i])
@@ -107,6 +105,8 @@ namespace FFT {
     }
 
     void prepare_roots(int n) {
+        assert(is_power_of_two(n));
+
         if (int(roots.size()) >= n)
             return;
 
@@ -462,7 +462,7 @@ namespace FFT {
 
     // Multiplies many polynomials whose total degree is n in O(n log n log(polynomials.size())).
     template<typename T>
-    vector<T> mod_multiply_all(const vector<vector<T>> &polynomials, const int mod, bool split) {
+    vector<T> mod_multiply_all(const vector<vector<T>> &polynomials, const int mod, bool split, int size_limit = INT32_MAX) {
         return y_combinator([&](auto self, int start, int end) -> vector<T> {
             if (start >= end)
                 return {1};
@@ -473,7 +473,12 @@ namespace FFT {
             int mid = (start + end) / 2;
             vector<T> left = self(start, mid);
             vector<T> right = self(mid, end);
-            return mod_multiply(left, right, mod, split);
+            vector<T> result = mod_multiply(left, right, mod, split);
+
+            if (int(result.size()) > size_limit)
+                result.resize(size_limit);
+
+            return result;
         })(0, int(polynomials.size()));
     }
 }
@@ -500,7 +505,7 @@ struct bignum {
         init(x);
     }
 
-    bignum(string str) {
+    bignum(const string &str) {
         int len = int(str.size());
         int num_values = max((len + SECTION - 1) / SECTION, 1);
         values.assign(num_values, 0);

@@ -346,12 +346,12 @@ struct mod_matrix {
         return result;
     }
 
-    void print(ostream &os) const {
-        for (int i = 0; i < rows; i++)
-            for (int j = 0; j < cols; j++)
-                os << values[i][j] << (j < cols - 1 ? ' ' : '\n');
+    friend ostream& operator<<(ostream &os, const mod_matrix &m) {
+        for (int i = 0; i < m.rows; i++)
+            for (int j = 0; j < m.cols; j++)
+                os << m.values[i][j] << (j < m.cols - 1 ? ' ' : '\n');
 
-        os << '\n';
+        return os;
     }
 };
 
@@ -373,13 +373,13 @@ int main() {
     mod_matrix m1, m2;
     read_matrix(m1);
     read_matrix(m2);
-    (m1 + m1).print(cout);
-    (m2 - m2).print(cout);
-    (m1 * m2).print(cout);
+    cout << m1 + m1 << '\n';
+    cout << m2 - m2 << '\n';
+    cout << m1 * m2 << '\n';
 
     read_matrix(m1);
     int64_t p;
     cin >> p;
-    (m1 * mod_int(p)).print(cout);
-    m1.pow(p).print(cout);
+    cout << m1 * mod_int(p) << '\n';
+    cout << m1.pow(p) << '\n';
 }

@@ -36,7 +36,7 @@ struct search_buckets {
         values = buckets = initial;
         n = int(values.size());
         bucket_size = int(3 * sqrt(n * log(n + 1)) + 1);
-        cerr << "Bucket size: " << bucket_size << endl;
+        // cerr << "Bucket size: " << bucket_size << endl;
 
         for (int start = 0; start < n; start += bucket_size)
             sort(buckets.begin() + start, buckets.begin() + get_bucket_end_from_start(start));
