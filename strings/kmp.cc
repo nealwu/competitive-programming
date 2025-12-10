@@ -10,11 +10,11 @@ namespace KMP {
     // after starting from the prefix `len` and adding char `c`.
     // Runs in worst case O(len) but amortizes to O(1) in most situations.
     template<typename T, typename T_elem>
-    int get_link(const T &pattern, const vector<int> &fail, int len, const T_elem &c) {
-        while (len > 0 && pattern[len] != c)
+    int get_link(const T &pattern, const vector<int> &fail, int len, const T_elem &ch) {
+        while (len > 0 && pattern[len] != ch)
             len = fail[len];
 
-        if (pattern[len] == c)
+        if (pattern[len] == ch)
             len++;
 
         return len;
