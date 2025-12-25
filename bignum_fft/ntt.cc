@@ -365,7 +365,7 @@ struct NTT {
 
     // Multiplies many polynomials whose total degree is n in O(n log n log(polynomials.size())).
     template<typename T>
-    vector<T> mod_multiply_all(const vector<vector<T>> &polynomials, int size_limit = -1) {
+    vector<T> mod_multiply_all(const vector<vector<T>> &polynomials, int size_limit = INT32_MAX) {
         return y_combinator([&](auto self, int start, int end) -> vector<T> {
             if (start >= end)
                 return {1};
@@ -378,7 +378,7 @@ struct NTT {
             vector<T> right = self(mid, end);
             vector<T> result = mod_multiply(left, right);
 
-            if (size_limit >= 0 && int(result.size()) > size_limit)
+            if (int(result.size()) > size_limit)
                 result.resize(size_limit);
 
             return result;
